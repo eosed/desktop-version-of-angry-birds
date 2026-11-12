@@ -13,13 +13,14 @@ import win32api
 import win32con
 import win32gui
 import win32process
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from . import art, diag
 from .display import monitors
 from .game import AngryBirdsGame, LEVELS
 from .icons import artwork as icon_artwork, select_bird_ids
 from .shell import ShellDesktop, atomic_json
+from .wallpaper import primary_wallpaper
 
 WS_EX_LAYERED = 0x80000
 WS_EX_NOACTIVATE = 0x08000000
@@ -126,6 +127,7 @@ class GameOverlay:
         self.geometry = desktop.get_geometry()
         self.monitor_state = monitors()
         primary = next(m for m in self.monitor_state if m[4])
+        self.primary = primary
         self.primary_bounds = map_rect(primary[2], (0, 0), win32gui.ClientToScreen(self.parent, (0, 0)))
         left, top, right, bottom = self.primary_bounds
         self.width = right - left
@@ -158,14 +160,17 @@ class GameOverlay:
         self.bird_hwnd = None
         self.band_hwnd = None
         self.aim_hwnd = None
+        self.queue_hwnd = None
         self.object_windows = {}
         self.surfaces = {}
         self.background_frame = None
         self.hud_key = None
         self.banner_key = None
+        self.queue_key = None
         self.last_monitor_check = 0.0
         self.bird_rest_frame = None
         self.frame_cache = {}
+        self.queue_frame = None
         self.bg_key = None
         self.font = art.font(max(13, round(15 * primary[3] / 96)))
 
@@ -198,14 +203,16 @@ class GameOverlay:
 
     def _stack(self):
         # Child z-order: later windows sit above earlier ones.
-        for hwnd in (self.bg_hwnd, *self.object_windows.values(), self.band_hwnd,
-                     self.aim_hwnd, self.bird_hwnd, self.hud_hwnd, self.banner_hwnd):
+        for hwnd in (self.bg_hwnd, *self.object_windows.values(), self.queue_hwnd,
+                     self.band_hwnd, self.aim_hwnd, self.bird_hwnd, self.hud_hwnd,
+                     self.banner_hwnd):
             if hwnd and win32gui.IsWindow(hwnd):
                 win32gui.SetWindowPos(hwnd, win32con.HWND_TOP, 0, 0, 0, 0,
                                       win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_NOACTIVATE)
 
     def _create_scene_windows(self):
         self.bg_hwnd = self._layer()
+        self.queue_hwnd = self._layer()
         self.band_hwnd = self._layer()
         self.aim_hwnd = self._layer()
         self.bird_hwnd = self._layer()
@@ -226,6 +233,7 @@ class GameOverlay:
 
     # -- lifecycle ---------------------------------------------------------
     def prepare(self):
+        wallpaper = None
         comtypes.CoInitialize()
         try:
             for identity in self.bird_ids:
@@ -236,11 +244,19 @@ class GameOverlay:
                 except Exception as exc:
                     diag.log(f'bird artwork failed: {identity!r}: {exc!r}')
                     self.bird_sources.append(art.bird_sprite(self.game.bird_radius))
+            try:
+                wallpaper = primary_wallpaper(self.primary[1], self.desktop.get_geometry())
+                if wallpaper is not None:
+                    screen, work = self.primary[1], self.primary[2]
+                    wallpaper = wallpaper.crop((work[0] - screen[0], work[1] - screen[1],
+                                                work[2] - screen[0], work[3] - screen[1]))
+            except Exception as exc:
+                diag.log(f'wallpaper read failed: {exc!r}')
         finally:
             comtypes.CoUninitialize()
         self.background_frame = art.background(
             self.width, self.height, self.game.ground_y, self.game.sling_x,
-            self.game.fork_y, self.game.scale)
+            self.game.fork_y, self.game.scale, wallpaper=wallpaper)
 
     def show(self, snapshot, journal):
         try:
@@ -249,8 +265,9 @@ class GameOverlay:
             snapshot['hidden_listview'] = self.listview
             atomic_json(journal, snapshot)
             win32gui.ShowWindow(self.listview, win32con.SW_HIDE)
-            for hwnd in [self.bg_hwnd, self.band_hwnd, self.aim_hwnd, self.bird_hwnd,
-                         self.hud_hwnd, self.banner_hwnd, *self.object_windows.values()]:
+            for hwnd in [self.bg_hwnd, self.queue_hwnd, self.band_hwnd, self.aim_hwnd,
+                         self.bird_hwnd, self.hud_hwnd, self.banner_hwnd,
+                         *self.object_windows.values()]:
                 win32gui.ShowWindow(hwnd, win32con.SW_SHOWNOACTIVATE)
             self._stack()
             diag.log(f'angry birds overlay shown: {self.width}x{self.height}, '
@@ -265,12 +282,13 @@ class GameOverlay:
         for surface in self.surfaces.values():
             surface.close()
         self.surfaces.clear()
-        for hwnd in [self.bg_hwnd, self.band_hwnd, self.aim_hwnd, self.bird_hwnd,
-                     self.hud_hwnd, self.banner_hwnd, *self.object_windows.values()]:
+        for hwnd in [self.bg_hwnd, self.queue_hwnd, self.band_hwnd, self.aim_hwnd,
+                     self.bird_hwnd, self.hud_hwnd, self.banner_hwnd,
+                     *self.object_windows.values()]:
             if hwnd and win32gui.IsWindow(hwnd):
                 win32gui.DestroyWindow(hwnd)
         self.object_windows.clear()
-        self.bg_hwnd = self.band_hwnd = self.aim_hwnd = self.bird_hwnd = None
+        self.bg_hwnd = self.queue_hwnd = self.band_hwnd = self.aim_hwnd = self.bird_hwnd = None
         self.hud_hwnd = self.banner_hwnd = None
         self.frame_cache.clear()
 
@@ -287,15 +305,17 @@ class GameOverlay:
     def set_hidden(self, hidden, now):
         shown = win32con.SW_HIDE if hidden else win32con.SW_SHOWNOACTIVATE
         if hidden:
-            for hwnd in [self.bg_hwnd, self.band_hwnd, self.aim_hwnd, self.bird_hwnd,
-                         self.hud_hwnd, self.banner_hwnd, *self.object_windows.values()]:
+            for hwnd in [self.bg_hwnd, self.queue_hwnd, self.band_hwnd, self.aim_hwnd,
+                         self.bird_hwnd, self.hud_hwnd, self.banner_hwnd,
+                         *self.object_windows.values()]:
                 if hwnd:
                     win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
             win32gui.ShowWindow(self.listview, win32con.SW_SHOWNA)
         else:
             win32gui.ShowWindow(self.listview, win32con.SW_HIDE)
-            for hwnd in [self.bg_hwnd, self.band_hwnd, self.aim_hwnd, self.bird_hwnd,
-                         self.hud_hwnd, self.banner_hwnd, *self.object_windows.values()]:
+            for hwnd in [self.bg_hwnd, self.queue_hwnd, self.band_hwnd, self.aim_hwnd,
+                         self.bird_hwnd, self.hud_hwnd, self.banner_hwnd,
+                         *self.object_windows.values()]:
                 if hwnd:
                     win32gui.ShowWindow(hwnd, shown)
             self._stack()
@@ -333,6 +353,7 @@ class GameOverlay:
         self.update_pointer(now)
         self.game.step(dt)
         self.draw_objects()
+        self.draw_queue()
         self.draw_bird(now)
         self.draw_bands()
         self.draw_aim()
@@ -345,6 +366,7 @@ class GameOverlay:
         self.surfaces.clear()
         self.frame_cache.clear()
         self.bg_key = None
+        self.queue_key = None
 
     def draw_background(self):
         if self.background_frame is None:
@@ -519,6 +541,40 @@ class GameOverlay:
         self.present(self.banner_hwnd, frame, x, y)
 
     # -- bird drawing ------------------------------------------------------
+    def draw_queue(self):
+        """Show the next few real desktop icons waiting behind the slingshot."""
+        game = self.game
+        count = min(3, max(0, game.level.birds - game.current_bird - 1))
+        if game.state not in ('ready', 'flying', 'between') or count <= 0 or not self.bird_sources:
+            win32gui.ShowWindow(self.queue_hwnd, win32con.SW_HIDE)
+            self.queue_key = None
+            return
+        s = game.scale
+        size = int(54 * s)
+        gap = int(70 * s)
+        total = count * size + (count - 1) * (gap - size)
+        x0 = max(20 * s, game.sling_x - 70 * s - total)
+        y0 = game.ground_y - size - 10 * s
+        key = (game.level_index, game.current_bird, count, size, round(x0), round(y0))
+        if key != self.queue_key:
+            self.queue_key = key
+            frame = Image.new('RGBA', (int(total + 20 * s), int(size + 20 * s)), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(frame)
+            for i in range(count):
+                index = (game.current_bird + 1 + i) % len(self.bird_sources)
+                base = self.bird_sources[index]
+                ratio = size / max(base.size)
+                thumb = base.resize((max(1, round(base.width * ratio)),
+                                     max(1, round(base.height * ratio))), Image.Resampling.LANCZOS)
+                x = 10 * s + i * gap + (size - thumb.width) / 2
+                y = 10 * s + (size - thumb.height) / 2
+                draw.ellipse((x + size * 0.10, y + size - 3 * s, x + size * 0.90, y + size + 5 * s),
+                             fill=(0, 0, 0, 65))
+                frame.alpha_composite(thumb, (int(x), int(y)))
+            self.queue_frame = frame
+        win32gui.ShowWindow(self.queue_hwnd, win32con.SW_SHOWNOACTIVATE)
+        self.present(self.queue_hwnd, self.queue_frame, x0 - 10 * s, y0 - 10 * s)
+
     def draw_bird(self, now):
         game = self.game
         if game.state == 'ready' and not game.dragging:

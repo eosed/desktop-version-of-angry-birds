@@ -41,36 +41,49 @@ def _shadowed_text(draw, xy, text, fnt, fill=CREAM, shadow=(0, 0, 0, 130), offse
     draw.text((x, y), text, font=fnt, fill=fill)
 
 
-def background(width, height, ground_y, sling_x, fork_y, scale):
-    """Sky, hills, grass, dirt and the slingshot fork (one static frame)."""
+def background(width, height, ground_y, sling_x, fork_y, scale, wallpaper=None):
+    """Desktop wallpaper, grass, dirt and the slingshot fork (one static frame).
+
+    ``wallpaper`` is the real Windows wallpaper cropped to the work area.  The
+    upstream billiards project keeps the desktop itself as the playfield; this
+    game does the same instead of hiding it behind a synthetic sky.
+    """
     width, height = int(width), int(height)
-    image = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(image)
-    top = (104, 194, 245)
-    bottom = (216, 243, 255)
-    for y in range(height):
-        t = min(1.0, y / max(1.0, float(ground_y)))
-        color = tuple(round(top[i] + (bottom[i] - top[i]) * t) for i in range(3))
-        draw.line((0, y, width, y), fill=color + (255,))
-    # sun and soft clouds
-    sun_r = 70 * scale
-    draw.ellipse((width * 0.09 - sun_r, height * 0.08 - sun_r, width * 0.09 + sun_r, height * 0.08 + sun_r),
-                 fill=(255, 236, 150, 210))
-    random.seed(11)
-    for cx, cy, size in ((0.32, 0.13, 1.0), (0.58, 0.08, 0.7), (0.84, 0.17, 1.25)):
-        x, y, s = width * cx, height * cy, scale * size
-        for dx, dy, rx, ry in ((-80, 10, 90, 34), (0, -12, 110, 48), (85, 8, 80, 30)):
-            draw.ellipse((x + dx * s - rx * s, y + dy * s - ry * s, x + dx * s + rx * s, y + dy * s + ry * s),
-                         fill=(255, 255, 255, 150))
-    # rolling hills
-    for offset, color, height_factor in ((0.0, (126, 193, 108, 255), 0.10),
-                                         (0.25, (100, 174, 96, 255), 0.07)):
-        points = [(0, ground_y)]
-        for i in range(0, width + 80, 80):
-            points.append((i, ground_y - (math.sin(i / 230 + offset * 8) * 0.5 + 0.5) * height * height_factor - 22 * scale))
-        points += [(width, ground_y)]
-        draw.polygon(points, fill=color)
+    if wallpaper is not None:
+        image = wallpaper.convert('RGB').resize((width, height), Image.LANCZOS).convert('RGBA')
+        image = image.filter(ImageFilter.GaussianBlur(radius=max(4, min(14, height / 140))))
+        image = Image.alpha_composite(image, Image.new('RGBA', (width, height), (10, 30, 46, 28)))
+        draw = ImageDraw.Draw(image)
+    else:
+        image = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image)
+        top = (104, 194, 245)
+        bottom = (216, 243, 255)
+        for y in range(height):
+            t = min(1.0, y / max(1.0, float(ground_y)))
+            color = tuple(round(top[i] + (bottom[i] - top[i]) * t) for i in range(3))
+            draw.line((0, y, width, y), fill=color + (255,))
+        # sun and soft clouds
+        sun_r = 70 * scale
+        draw.ellipse((width * 0.09 - sun_r, height * 0.08 - sun_r, width * 0.09 + sun_r, height * 0.08 + sun_r),
+                     fill=(255, 236, 150, 210))
+        random.seed(11)
+        for cx, cy, size in ((0.32, 0.13, 1.0), (0.58, 0.08, 0.7), (0.84, 0.17, 1.25)):
+            x, y, s = width * cx, height * cy, scale * size
+            for dx, dy, rx, ry in ((-80, 10, 90, 34), (0, -12, 110, 48), (85, 8, 80, 30)):
+                draw.ellipse((x + dx * s - rx * s, y + dy * s - ry * s, x + dx * s + rx * s, y + dy * s + ry * s),
+                             fill=(255, 255, 255, 150))
+        # rolling hills
+        for offset, color, height_factor in ((0.0, (126, 193, 108, 255), 0.10),
+                                             (0.25, (100, 174, 96, 255), 0.07)):
+            points = [(0, ground_y)]
+            for i in range(0, width + 80, 80):
+                points.append((i, ground_y - (math.sin(i / 230 + offset * 8) * 0.5 + 0.5) * height * height_factor - 22 * scale))
+            points += [(width, ground_y)]
+            draw.polygon(points, fill=color)
     # ground: grass strip + dirt body
+    if wallpaper is not None:
+        draw.rectangle((0, ground_y - 5, width, ground_y), fill=(0, 0, 0, 55))
     draw.rectangle((0, ground_y, width, height), fill=(120, 76, 44, 255))
     draw.rectangle((0, ground_y, width, ground_y + 26 * scale), fill=(92, 166, 63, 255))
     draw.rectangle((0, ground_y + 22 * scale, width, ground_y + 32 * scale), fill=(66, 133, 48, 255))

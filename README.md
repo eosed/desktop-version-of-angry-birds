@@ -31,7 +31,8 @@ python app.pyw
 
 ## 实现方式
 
-- **真实桌面图标作为小鸟**：通过 Windows Shell (`SHCreateItemFromParsingName` + `IImageFactory`) 提取图标缩略图，不截图、不复制文件。
+- **真实桌面图标作为小鸟**：通过 Windows Shell (`SHCreateItemFromParsingName` + `IImageFactory`) 提取图标缩略图，不截图、不复制文件；弹弓后方的待发射队列也会显示接下来的真实图标。
+- **真实桌面壁纸作为场景**：通过 `IDesktopWallpaper` 读取当前壁纸并按 Windows 的填充方式渲染到主显示器工作区，保留“桌面就是游戏场地”的感觉。
 - **桌面覆盖层**：用分层子窗口（`WS_EX_LAYERED`，挂在 Explorer 的 `SHELLDLL_DefView` 下）绘制游戏，并暂时隐藏真实图标列表；退出或崩溃恢复时重新显示。
 - **物理**：`pymunk` 刚体、重力、碰撞冲量与可破坏结构；三套关卡布局按屏幕尺寸缩放。
 - **崩溃恢复**：独立 watchdog 进程监视游戏进程；主机异常退出时自动恢复桌面图标显示。
@@ -46,6 +47,7 @@ dab/
   overlay.py         桌面分层窗口渲染与鼠标瞄准
   icons.py           Shell 图标缩略图提取
   shell.py           桌面图标列表与布局快照/恢复
+  wallpaper.py       读取并渲染当前 Windows 壁纸
   art.py             Pillow 程序化美术
   ui.py              Tk 工具栏与生命周期
   runner.py          60fps 渲染线程
