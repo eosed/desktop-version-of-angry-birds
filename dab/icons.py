@@ -1,8 +1,8 @@
 """Read real desktop icon artwork through the Shell.
 
-The birds in this game are the user's own desktop icons.  Keeping the extraction
-isolated here means the renderer only ever sees RGBA images and never has to know
-about COM.
+The birds and pigs in this game are the user's own desktop icons.  Keeping the
+extraction isolated here means the renderer only ever sees RGBA images and never
+has to know about COM.
 """
 from __future__ import annotations
 
