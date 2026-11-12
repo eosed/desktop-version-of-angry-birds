@@ -14,6 +14,10 @@
 - 顶部工具栏可切换 3 个关卡、重玩、下一关、隐藏游戏或退出。
 - `Esc` 退出；`Ctrl+Alt+X` 是全局退出热键（游戏悬停在桌面时也有效）。
 
+## 下载
+
+Windows 免安装单文件版：[GitHub Releases](https://github.com/eosed/desktop-version-of-angry-birds/releases/latest)。下载 `DesktopAngryBirds.exe` 直接运行。
+
 ## 运行
 
 要求 Windows 10/11、Python 3.10+。
