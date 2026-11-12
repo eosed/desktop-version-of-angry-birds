@@ -41,6 +41,8 @@ class GameTests(unittest.TestCase):
             with patch('dab.game.time.monotonic', clock):
                 game = AngryBirdsGame(1600, 1000)
                 game.load_level(index)
+                variants = [obj.variant for obj in game.objects if obj.kind == 'pig']
+                self.assertEqual(variants, list(range(len(variants))), f'level {index} pig variants')
                 before = [(obj.uid, obj.body.position, obj.dead, obj.hp) for obj in game.objects]
                 run_seconds(game, clock, 6)
                 after = {obj.uid: obj for obj in game.objects}

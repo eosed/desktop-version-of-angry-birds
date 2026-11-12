@@ -42,6 +42,7 @@ class GameObject:
     hp: float
     max_hp: float
     radius: float = 0.0
+    variant: int = 0
     dead: bool = False
     fuse: float = 0.0
     effect: str | None = None
@@ -243,7 +244,9 @@ class AngryBirdsGame:
         shape.friction = 0.7
         shape.elasticity = 0.25
         shape.collision_type = C_PIG
-        self._new_object('pig', body, shape, radius * 2, radius * 2, 100.0, radius)
+        variant = sum(1 for item in self.objects if item.kind == 'pig')
+        obj = self._new_object('pig', body, shape, radius * 2, radius * 2, 100.0, radius)
+        obj.variant = variant
 
     def _add_tnt(self, x, y, size):
         body = pymunk.Body(2.5, pymunk.moment_for_box(2.5, (size, size)))

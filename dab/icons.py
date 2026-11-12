@@ -105,3 +105,17 @@ def select_bird_ids(items, minimum):
     ordered = sorted(range(len(items)), key=lambda index: (item_tier(items[index]['id']), index))
     ids = [items[index]['id'] for index in ordered]
     return [ids[index % len(ids)] for index in range(max(minimum, 1))]
+
+
+def select_pig_ids(items, exclude, minimum):
+    """Pick other desktop app icons for pigs, excluding the bird icons."""
+    if not items:
+        return []
+    excluded = set(exclude)
+    ordered = sorted(range(len(items)), key=lambda index: (item_tier(items[index]['id']), index))
+    ids = [items[index]['id'] for index in ordered if items[index]['id'] not in excluded]
+    apps = [identity for identity in ids if item_tier(identity) == 0]
+    pool = apps or ids
+    if not pool:
+        return []
+    return [pool[index % len(pool)] for index in range(max(minimum, 1))]

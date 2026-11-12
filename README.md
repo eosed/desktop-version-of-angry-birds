@@ -1,6 +1,6 @@
-# 桌面版愤怒的小鸟
+# 桌面图标版愤怒的小鸟
 
-把 Windows 桌面变成愤怒的小鸟弹弓场：桌面图标就是你的小鸟，拖拽、瞄准、松手，把木屋和石头城堡里的小猪砸掉。
+把 Windows 桌面变成愤怒的小鸟弹弓场：桌面图标就是你的小鸟，也是城堡里的小猪，拖拽、瞄准、松手，把木屋和石头城堡里的“猪”砸掉。
 
 窗口标题：**Desktop version of Angry Birds**
 
@@ -31,7 +31,7 @@ python app.pyw
 
 ## 实现方式
 
-- **真实桌面图标作为小鸟**：通过 Windows Shell (`SHCreateItemFromParsingName` + `IImageFactory`) 提取图标缩略图，不截图、不复制文件；弹弓后方的待发射队列也会显示接下来的真实图标。
+- **真实桌面图标作为小鸟和猪**：通过 Windows Shell (`SHCreateItemFromParsingName` + `IImageFactory`) 提取图标缩略图，不截图、不复制文件；小鸟来自桌面快捷方式，小猪来自其他桌面应用图标，弹弓后方的待发射队列也会显示接下来的真实图标。
 - **真实桌面壁纸作为场景**：通过 `IDesktopWallpaper` 读取当前壁纸并按 Windows 的填充方式渲染到主显示器工作区，保留“桌面就是游戏场地”的感觉。
 - **桌面覆盖层**：用分层子窗口（`WS_EX_LAYERED`，挂在 Explorer 的 `SHELLDLL_DefView` 下）绘制游戏，并暂时隐藏真实图标列表；退出或崩溃恢复时重新显示。
 - **物理**：`pymunk` 刚体、重力、碰撞冲量与可破坏结构；三套关卡布局按屏幕尺寸缩放。

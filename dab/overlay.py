@@ -18,7 +18,7 @@ from PIL import Image, ImageDraw
 from . import art, diag
 from .display import monitors
 from .game import AngryBirdsGame, LEVELS
-from .icons import artwork as icon_artwork, select_bird_ids
+from .icons import artwork as icon_artwork, select_bird_ids, select_pig_ids
 from .shell import ShellDesktop, atomic_json
 from .wallpaper import primary_wallpaper
 
@@ -134,8 +134,12 @@ class GameOverlay:
         self.height = bottom - top
         self.origin = (left, top)
         self.game = AngryBirdsGame(self.width, self.height)
-        self.bird_ids = select_bird_ids(desktop.items(), max(level.birds for level in LEVELS))
+        items = desktop.items()
+        self.bird_ids = select_bird_ids(items, max(level.birds for level in LEVELS))
+        self.pig_ids = select_pig_ids(items, self.bird_ids,
+                                      max(6, max(len(level.pigs) for level in LEVELS)))
         self.bird_sources = []
+        self.pig_sources = []
         self.want_hidden = False
         self.hidden = False
         self.pending_level = None
@@ -244,6 +248,14 @@ class GameOverlay:
                 except Exception as exc:
                     diag.log(f'bird artwork failed: {identity!r}: {exc!r}')
                     self.bird_sources.append(art.bird_sprite(self.game.bird_radius))
+            for identity in self.pig_ids:
+                try:
+                    source = icon_artwork(identity, 128)
+                    bounds = source.getchannel('A').getbbox()
+                    self.pig_sources.append(source.crop(bounds) if bounds else source)
+                except Exception as exc:
+                    diag.log(f'pig artwork failed: {identity!r}: {exc!r}')
+                    self.pig_sources.append(art.pig_sprite(38 * self.game.scale))
             try:
                 wallpaper = primary_wallpaper(self.primary[1], self.desktop.get_geometry())
                 if wallpaper is not None:
@@ -411,9 +423,17 @@ class GameOverlay:
                 frame = art.effect_frame('boom', obj.effect_t, obj.w, obj.h)
             return frame, obj.last_pose
         if obj.kind == 'pig':
-            base = art.pig_sprite(obj.radius)
-            canvas = int(base.width * 1.12)
-            key = ('pig', int(obj.radius), round(math.degrees(obj.angle) / 4) * 4)
+            if self.pig_sources:
+                base = self.pig_sources[obj.variant % len(self.pig_sources)]
+                diameter = max(1, int(obj.radius * 2.4))
+                if max(base.size) != diameter:
+                    ratio = diameter / max(base.size)
+                    base = base.resize((max(1, round(base.width * ratio)),
+                                        max(1, round(base.height * ratio))), Image.Resampling.LANCZOS)
+            else:
+                base = art.pig_sprite(obj.radius)
+            canvas = int(max(base.size) * 1.12)
+            key = ('pig', obj.variant, int(max(base.size)), round(math.degrees(obj.angle) / 4) * 4)
             if key not in self.frame_cache:
                 self.frame_cache[key] = self._rotated(base, math.degrees(obj.angle), canvas)
             return self.frame_cache[key], (obj.body.position.x, obj.body.position.y, 0.0)
