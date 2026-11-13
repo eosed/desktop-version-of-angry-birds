@@ -16,6 +16,7 @@ import win32con
 import win32gui
 
 from . import config, diag
+from .game import LEVELS
 from .hotkeys import Hotkeys
 from .overlay import GameOverlay
 from .paths import runtime_directory
@@ -88,7 +89,7 @@ class DesktopAngryBirdsApp:
         outer.pack(fill='both', expand=True)
         top = tk.Frame(outer, bg=BG)
         top.pack(fill='x')
-        tk.Label(top, text='桌面版愤怒的小鸟', bg=BG, fg=TEXT,
+        tk.Label(top, text='桌面图标版愤怒的小鸟', bg=BG, fg=TEXT,
                  font=('Microsoft YaHei UI', 13, 'bold')).pack(side='left', padx=(2, 12))
         self.status = tk.Label(top, text='准备中…', bg=BG, fg=MUTED,
                                font=('Microsoft YaHei UI', 9))
@@ -99,8 +100,8 @@ class DesktopAngryBirdsApp:
         buttons = tk.Frame(outer, bg=BG)
         buttons.pack(fill='x', pady=(6, 0))
         self.level_buttons = []
-        for index in range(3):
-            button = self._button(buttons, f'第{index + 1}关', lambda i=index: self.select_level(i), 6)
+        for index in range(len(LEVELS)):
+            button = self._button(buttons, f'{index + 1}', lambda i=index: self.select_level(i), 2)
             button.pack(side='left', padx=2)
             self.level_buttons.append(button)
         tk.Frame(buttons, bg=BG, width=12).pack(side='left')
@@ -108,11 +109,11 @@ class DesktopAngryBirdsApp:
         self._button(buttons, '下一关', self.next_level, 6).pack(side='left', padx=2)
         self.hide_button = self._button(buttons, '隐藏', self.toggle_hidden, 5)
         self.hide_button.pack(side='left', padx=2)
-        self._button(buttons, '退出', self.close, 5).pack(side='right', padx=2)
+        self._button(buttons, '退出', self.close, 5).pack(side='left', padx=2)
 
     def _place_toolbar(self):
         self.root.update_idletasks()
-        width = max(900, self.root.winfo_reqwidth())
+        width = max(1250, self.root.winfo_reqwidth())
         height = self.root.winfo_reqheight()
         monitor = win32api.MonitorFromPoint((0, 0), win32con.MONITOR_DEFAULTTOPRIMARY)
         work = win32api.GetMonitorInfo(monitor)['Work']

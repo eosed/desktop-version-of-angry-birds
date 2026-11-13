@@ -58,6 +58,11 @@ class GameTests(unittest.TestCase):
             0: [-9],
             1: [-7],
             2: [-4, -7],
+            3: [-2],
+            4: [-15],
+            5: [-8, -5],
+            6: [-11],
+            7: [-15.5, -5],
         }
         for index, angles in cases.items():
             clock = Clock()
