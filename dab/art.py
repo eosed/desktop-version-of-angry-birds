@@ -19,6 +19,7 @@ RED = (213, 57, 53, 255)
 RED_DARK = (145, 31, 33, 255)
 GREEN = (124, 196, 70, 255)
 GREEN_DARK = (54, 113, 43, 255)
+BIRD_LABELS = {'red': '红鸟', 'bomb': '炸弹鸟', 'split': '分裂鸟'}
 
 
 def font(size, bold=False):
@@ -209,9 +210,59 @@ def pig_sprite(radius):
     return _supersampled((size, size), painter)
 
 
-def bird_sprite(radius):
+def bird_sprite(radius, kind='red'):
+    """A red/bomb/split bird fallback for failed Shell icon extraction."""
     size = int(round(radius * 2.7))
     r = radius
+    if kind == 'bomb':
+        def paint_bomb(draw, f):
+            cx = cy = size * f / 2
+            R = r * f
+            draw.ellipse((cx - R, cy - R, cx + R, cy + R), fill=(40, 52, 58, 255),
+                         outline=(18, 24, 28, 255), width=max(3, int(3 * f)))
+            draw.ellipse((cx - R * 0.58, cy + R * 0.18, cx + R * 0.5, cy + R * 0.68),
+                         fill=(78, 91, 94, 255))
+            for sign in (-1, 1):
+                ex = cx + sign * R * 0.30
+                ey = cy - R * 0.20
+                draw.ellipse((ex - R * 0.20, ey - R * 0.22, ex + R * 0.20, ey + R * 0.18),
+                             fill=(255, 255, 255, 255))
+                pr = R * 0.085
+                draw.ellipse((ex - pr, ey - pr, ex + pr, ey + pr), fill=INK)
+            draw.line((cx - R * 0.55, cy - R * 0.52, cx - R * 0.08, cy - R * 0.34),
+                      fill=INK, width=max(3, int(4 * f)))
+            draw.line((cx + R * 0.55, cy - R * 0.52, cx + R * 0.08, cy - R * 0.34),
+                      fill=INK, width=max(3, int(4 * f)))
+            draw.polygon([(cx - R * 0.15, cy + R * 0.1), (cx + R * 0.30, cy + R * 0.2),
+                          (cx - R * 0.10, cy + R * 0.36)], fill=(246, 174, 45, 255))
+            # fuse
+            draw.line((cx + R * 0.15, cy - R * 0.98, cx + R * 0.45, cy - R * 1.35),
+                      fill=(156, 144, 120, 255), width=max(2, int(3 * f)))
+            draw.ellipse((cx + R * 0.35, cy - R * 1.48, cx + R * 0.62, cy - R * 1.20),
+                         fill=(255, 186, 60, 255))
+        return _supersampled((size, size), paint_bomb)
+    if kind == 'split':
+        def paint_split(draw, f):
+            cx = cy = size * f / 2
+            R = r * f
+            draw.ellipse((cx - R, cy - R, cx + R, cy + R), fill=(86, 176, 236, 255),
+                         outline=(36, 104, 158, 255), width=max(2, int(3 * f)))
+            draw.ellipse((cx - R * 0.55, cy + R * 0.12, cx + R * 0.52, cy + R * 0.72),
+                         fill=(232, 243, 250, 255))
+            for sign in (-1, 1):
+                ex = cx + sign * R * 0.30
+                ey = cy - R * 0.18
+                draw.ellipse((ex - R * 0.20, ey - R * 0.22, ex + R * 0.20, ey + R * 0.18),
+                             fill=(255, 255, 255, 255))
+                pr = R * 0.085
+                draw.ellipse((ex - pr, ey - pr, ex + pr, ey + pr), fill=INK)
+            draw.polygon([(cx - R * 0.18, cy + R * 0.04), (cx + R * 0.34, cy + R * 0.14),
+                          (cx - R * 0.16, cy + R * 0.32)], fill=(246, 174, 45, 255))
+            for sign in (-1, 1):
+                draw.polygon([(cx + sign * R * 0.85, cy - R * 0.2), (cx + sign * R * 1.3, cy - R * 0.6),
+                              (cx + sign * R * 1.05, cy + R * 0.15)], fill=(216, 236, 248, 255),
+                             outline=(36, 104, 158, 255))
+        return _supersampled((size, size), paint_split)
 
     def painter(draw, f):
         cx = cy = size * f / 2
@@ -295,7 +346,7 @@ def aim_dots(points, color=(255, 255, 255, 230)):
     return image, (int(left), int(top))
 
 
-def hud_card(width, height, level_name, score, pigs, birds, stars):
+def hud_card(width, height, level_name, score, pigs, birds, stars, bird_kind='red'):
     image = Image.new('RGBA', (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
     draw.rounded_rectangle((2, 2, width - 2, height - 2), radius=18, fill=(16, 37, 30, 218),
@@ -306,7 +357,9 @@ def hud_card(width, height, level_name, score, pigs, birds, stars):
     draw.text((24, 12), level_name, font=title_f, fill=(240, 250, 244, 255))
     draw.text((24, height * 0.48), f'得分  {score:,}', font=body_f, fill=(255, 226, 140, 255))
     draw.text((width * 0.40, height * 0.48), f'小猪  {pigs}', font=body_f, fill=(168, 230, 164, 255))
-    draw.text((width * 0.62, height * 0.48), f'小鸟  {birds}', font=body_f, fill=(255, 190, 180, 255))
+    draw.text((width * 0.55, height * 0.48), f'小鸟  {birds}', font=body_f, fill=(255, 190, 180, 255))
+    draw.text((width * 0.68, height * 0.48), BIRD_LABELS.get(bird_kind, '红鸟'), font=body_f,
+              fill=(180, 228, 255, 255))
     # stars
     for index in range(3):
         cx = width - 36 - index * 30

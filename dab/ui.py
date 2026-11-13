@@ -113,7 +113,7 @@ class DesktopAngryBirdsApp:
 
     def _place_toolbar(self):
         self.root.update_idletasks()
-        width = max(1250, self.root.winfo_reqwidth())
+        width = max(1380, self.root.winfo_reqwidth())
         height = self.root.winfo_reqheight()
         monitor = win32api.MonitorFromPoint((0, 0), win32con.MONITOR_DEFAULTTOPRIMARY)
         work = win32api.GetMonitorInfo(monitor)['Work']
@@ -193,8 +193,9 @@ class DesktopAngryBirdsApp:
         game = self.overlay.game
         names = {'ready': '瞄准中', 'flying': '小鸟飞行中', 'between': '准备下一只',
                  'won': '过关', 'lost': '未过关'}
+        kind = {'bomb': '炸弹鸟·点击引爆', 'split': '分裂鸟·点击分裂'}.get(game.bird_kind, '红鸟')
         self.status.configure(
-            text=f'第 {game.level_index + 1} 关 · {names.get(game.state, game.state)}  '
+            text=f'第 {game.level_index + 1} 关 · {kind}  '
                  f'得分 {game.score:,}  |  小猪 {game.pigs_left()}  |  小鸟 {game.birds_left}')
         for index, button in enumerate(self.level_buttons):
             button.configure(bg='#285542' if index == game.level_index else CARD,

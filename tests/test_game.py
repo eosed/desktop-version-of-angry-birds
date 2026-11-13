@@ -55,28 +55,75 @@ class GameTests(unittest.TestCase):
 
     def test_each_level_can_be_won(self):
         cases = {
-            0: [-9],
-            1: [-7],
-            2: [-4, -7],
-            3: [-2],
-            4: [-15],
-            5: [-8, -5],
-            6: [-11],
-            7: [-15.5, -5],
+            0: [(-9, None)],
+            1: [(-7, None)],
+            2: [(-4, None), (-7, None)],
+            3: [(-2, None)],
+            4: [(-15, None)],
+            5: [(-8, None), (-5, None)],
+            6: [(-11, None)],
+            7: [(-15.5, None), (-5, None)],
+            8: [(-5, None), (-7, 0.4)],
+            9: [(-4, None), (-12, 0.8)],
+            10: [(-9, None)],
+            11: [(-6, None), (-7.5, 1.0), (-18, 0.2)],
+            12: [(-10, None), (-7, 0.4)],
+            13: [(-4, None), (-10, 1.0)],
+            14: [(-9, None)],
+            15: [(-6, None), (-15, 0.8), (-8, 0.4)],
+            16: [(-3, None), (-4, 0.6)],
+            17: [(-3, None), (-6, 0.6)],
+            18: [(-7.5, None), (6, None)],
+            19: [(-18, None), (-10, 0.8), (-7.5, 0.4)],
         }
-        for index, angles in cases.items():
+        self.assertEqual(len(cases), len(LEVELS))
+        for index, shots in cases.items():
             clock = Clock()
             with patch('dab.game.time.monotonic', clock):
                 game = AngryBirdsGame(2560, 1380)
                 game.load_level(index)
-                for angle in angles:
+                for angle, delay in shots:
                     if game.state == 'won':
                         break
                     shoot(game, angle)
+                    if delay is not None:
+                        run_seconds(game, clock, delay)
+                        game.trigger_ability()
                     run_seconds(game, clock, 12)
                 self.assertEqual(game.state, 'won', f'level {index} ended as {game.state}')
                 self.assertEqual(game.pigs_left(), 0)
                 self.assertGreater(game.score, 0)
+
+
+class SpecialBirdTests(unittest.TestCase):
+    def test_bomb_explodes_and_split_makes_three(self):
+        clock = Clock()
+        with patch('dab.game.time.monotonic', clock):
+            game = AngryBirdsGame(2560, 1380)
+            game.load_level(10)
+            self.assertEqual(game.level.types[0], 'red')
+            game.begin_drag(*game.anchor)
+            game.drag_to(game.anchor[0] - game.max_drag, game.anchor[1] + 30)
+            game.release()
+            run_seconds(game, clock, 12)
+            self.assertEqual(game.bird_kind, 'bomb')
+            shoot(game, -9)
+            run_seconds(game, clock, 0.5)
+            game.trigger_ability()
+            self.assertTrue(game.ability_used)
+            run_seconds(game, clock, 4)
+            self.assertIn(game.state, ('between', 'ready', 'won'))
+            for _ in range(80):
+                clock.now += 1 / 60
+                game.step(1 / 60)
+            self.assertEqual(game.bird_kind, 'split')
+            shoot(game, -9)
+            run_seconds(game, clock, 0.5)
+            game.trigger_ability()
+            self.assertEqual(len(game.split_children), 3)
+            self.assertEqual(len(game._flying_bodies()), 3)
+            run_seconds(game, clock, 12)
+            self.assertEqual(game.split_children, [])
 
 
 class InputTests(unittest.TestCase):

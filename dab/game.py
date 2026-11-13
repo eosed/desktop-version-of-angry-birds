@@ -22,6 +22,10 @@ BIRD_RADIUS = 34.0
 WOOD = 'wood'
 STONE = 'stone'
 TNT = 'tnt'
+RED = 'red'
+BOMB = 'bomb'
+SPLIT = 'split'
+BIRD_NAMES = {RED: '红鸟', BOMB: '炸弹鸟', SPLIT: '分裂鸟'}
 
 # collision types
 C_GROUND = 1
@@ -67,6 +71,14 @@ class Level:
     tnt: list
     two_star: int
     three_star: int
+    bird_types: tuple = ()
+
+    @property
+    def types(self):
+        """A deterministic red/bomb/split cycle, with authored specials first."""
+        authored = tuple(self.bird_types)
+        cycle = (RED, BOMB, SPLIT) * self.birds
+        return (authored + cycle)[:self.birds]
 
 
 def _b(kind, x, y, w, h, angle=0.0):
@@ -183,6 +195,161 @@ LEVELS = [
         [],
         28000, 46000,
     ),
+    Level(
+        '双木屋', 5,
+        [
+            _b(WOOD, -310, 60, 24, 120), _b(WOOD, -170, 60, 24, 120),
+            _b(WOOD, -240, 132, 180, 24),
+            _b(WOOD, 170, 60, 24, 120), _b(WOOD, 310, 60, 24, 120),
+            _b(WOOD, 240, 132, 180, 24),
+        ],
+        [_p(-240, 30, 28), _p(-240, 172, 28), _p(240, 30, 28), _p(240, 172, 28)],
+        [],
+        32000, 50000,
+    ),
+    Level(
+        '石桥二', 5,
+        [
+            _b(STONE, -200, 70, 40, 140), _b(STONE, 0, 70, 40, 140),
+            _b(STONE, 200, 70, 40, 140), _b(STONE, 0, 153, 480, 26),
+        ],
+        [_p(-100, 30, 30), _p(100, 30, 30), _p(-150, 196, 30), _p(150, 196, 30)],
+        [],
+        30000, 48000,
+    ),
+    Level(
+        '火药塔', 5,
+        [
+            _b(STONE, -90, 70, 36, 140), _b(STONE, 90, 70, 36, 140),
+            _b(STONE, 0, 152, 240, 24),
+            _b(WOOD, -50, 210, 28, 90), _b(WOOD, 50, 210, 28, 90),
+            _b(WOOD, 0, 267, 150, 24),
+        ],
+        [_p(-40, 30, 28), _p(40, 30, 28), _p(0, 309, 28)],
+        [(0, 30, 46)],
+        32000, 50000,
+    ),
+    Level(
+        '双桥', 5,
+        [
+            _b(STONE, -310, 70, 36, 140), _b(STONE, -210, 70, 36, 140),
+            _b(STONE, -260, 153, 160, 24),
+            _b(STONE, 210, 70, 36, 140), _b(STONE, 310, 70, 36, 140),
+            _b(STONE, 260, 153, 160, 24),
+        ],
+        [_p(-260, 30, 30), _p(-260, 196, 30), _p(260, 30, 30), _p(260, 196, 30)],
+        [],
+        32000, 50000,
+    ),
+    Level(
+        '木寨', 5,
+        [
+            _b(WOOD, -310, 60, 24, 120), _b(WOOD, -170, 60, 24, 120),
+            _b(WOOD, -240, 132, 180, 24),
+            _b(WOOD, 170, 60, 24, 120), _b(WOOD, 310, 60, 24, 120),
+            _b(WOOD, 240, 132, 180, 24),
+        ],
+        [_p(-240, 30, 28), _p(-240, 172, 28), _p(240, 30, 28), _p(240, 172, 28)],
+        [(0, 30, 46)],
+        34000, 54000,
+    ),
+    Level(
+        '石堡', 5,
+        [
+            _b(STONE, -150, 70, 40, 140), _b(STONE, 0, 70, 40, 140),
+            _b(STONE, 150, 70, 40, 140), _b(STONE, 0, 153, 400, 26),
+            _b(WOOD, -70, 210, 28, 90), _b(WOOD, 70, 210, 28, 90),
+            _b(WOOD, 0, 267, 200, 24),
+        ],
+        [_p(-70, 30, 30), _p(70, 30, 30), _p(-120, 196, 30), _p(120, 196, 30),
+         _p(0, 309, 30)],
+        [],
+        38000, 58000,
+    ),
+    Level(
+        '通天塔', 5,
+        [
+            _b(WOOD, -70, 60, 24, 120), _b(WOOD, 70, 60, 24, 120),
+            _b(WOOD, 0, 132, 180, 24),
+            _b(WOOD, -50, 190, 24, 90), _b(WOOD, 50, 190, 24, 90),
+            _b(WOOD, 0, 247, 140, 24),
+            _b(WOOD, -34, 300, 20, 80), _b(WOOD, 34, 300, 20, 80),
+        ],
+        [_p(0, 30, 28), _p(0, 176, 28), _p(0, 289, 28), _p(0, 362, 28)],
+        [],
+        36000, 56000,
+    ),
+    Level(
+        '猪王堡', 6,
+        [
+            _b(STONE, -240, 70, 40, 140), _b(STONE, -120, 70, 40, 140),
+            _b(STONE, 0, 70, 40, 140), _b(STONE, 120, 70, 40, 140),
+            _b(STONE, 240, 70, 40, 140), _b(STONE, 0, 153, 600, 26),
+            _b(WOOD, -70, 210, 28, 90), _b(WOOD, 70, 210, 28, 90),
+            _b(WOOD, 0, 267, 200, 24),
+        ],
+        [_p(-180, 30, 30), _p(180, 30, 30), _p(-120, 196, 30),
+         _p(0, 196, 30), _p(120, 196, 30), _p(0, 309, 30)],
+        [(180, 30, 46)],
+        42000, 66000,
+    ),
+    Level(
+        '松林', 5,
+        [
+            _b(WOOD, -340, 60, 24, 120), _b(WOOD, -200, 60, 24, 120),
+            _b(WOOD, -270, 132, 180, 24),
+            _b(WOOD, 200, 60, 24, 120), _b(WOOD, 340, 60, 24, 120),
+            _b(WOOD, 270, 132, 180, 24),
+        ],
+        [_p(-270, 30, 28), _p(-270, 172, 28), _p(270, 30, 28), _p(270, 172, 28)],
+        [(100, 30, 42)],
+        38000, 58000,
+    ),
+    Level(
+        '石墙', 5,
+        [
+            _b(STONE, -260, 65, 36, 130), _b(STONE, -120, 65, 36, 130),
+            _b(STONE, 20, 65, 36, 130), _b(STONE, 160, 65, 36, 130),
+            _b(STONE, -120, 145, 420, 24),
+            _b(WOOD, -40, 210, 28, 90), _b(WOOD, 100, 210, 28, 90),
+            _b(WOOD, 30, 267, 170, 24),
+        ],
+        [_p(-200, 30, 28), _p(-40, 30, 28), _p(120, 30, 28),
+         _p(-120, 196, 28), _p(120, 196, 28)],
+        [],
+        40000, 60000,
+    ),
+    Level(
+        '三连堡', 5,
+        [
+            _b(WOOD, -390, 60, 24, 120), _b(WOOD, -250, 60, 24, 120),
+            _b(WOOD, -320, 132, 180, 24),
+            _b(WOOD, -70, 60, 24, 120), _b(WOOD, 70, 60, 24, 120),
+            _b(WOOD, 0, 132, 180, 24),
+            _b(WOOD, 250, 60, 24, 120), _b(WOOD, 390, 60, 24, 120),
+            _b(WOOD, 320, 132, 180, 24),
+        ],
+        [_p(-320, 30, 28), _p(-320, 172, 28), _p(0, 30, 28), _p(0, 172, 28),
+         _p(320, 30, 28), _p(320, 172, 28)],
+        [(0, 230, 46)],
+        44000, 66000,
+    ),
+    Level(
+        '终局', 6,
+        [
+            _b(STONE, -280, 75, 40, 150), _b(STONE, -140, 75, 40, 150),
+            _b(STONE, 0, 75, 40, 150), _b(STONE, 140, 75, 40, 150),
+            _b(STONE, 0, 163, 460, 26),
+            _b(WOOD, -70, 220, 28, 90), _b(WOOD, 70, 220, 28, 90),
+            _b(WOOD, 0, 277, 200, 24),
+            _b(WOOD, -40, 330, 24, 80), _b(WOOD, 40, 330, 24, 80),
+            _b(WOOD, 0, 380, 130, 20),
+        ],
+        [_p(-200, 30, 30), _p(0, 30, 30), _p(200, 30, 30),
+         _p(-70, 196, 30), _p(70, 196, 30), _p(0, 309, 30)],
+        [(200, 30, 46), (300, 170, 46)],
+        50000, 76000,
+    ),
 ]
 
 
@@ -219,11 +386,15 @@ class AngryBirdsGame:
         self.state = 'ready'  # ready | flying | between | won | lost
         self.state_since = time.monotonic()
         self.current_bird = 0
+        self.bird_kind = RED
         self.bird_body = None
         self.bird_shape = None
         self.bird_pose = None
         self.bird_rest = 0.0
         self.bird_launched_at = 0.0
+        self.split_children = []
+        self.pending_ability = False
+        self.ability_used = False
         self.drag_origin = None
         self.drag_point = None
         self.dragging = False
@@ -259,6 +430,10 @@ class AngryBirdsGame:
         self.state = 'ready'
         self.state_since = time.monotonic()
         self.current_bird = 0
+        self.bird_kind = self.level.types[0]
+        self.split_children = []
+        self.pending_ability = False
+        self.ability_used = False
         self.dragging = False
         self.drag_point = None
         base_x = self.width * 0.70
@@ -396,16 +571,96 @@ class AngryBirdsGame:
         self.bird_pose = (x, y, 0.0)
         self.bird_rest = 0.0
         self.bird_launched_at = time.monotonic()
+        self.ability_used = False
+        self.pending_ability = False
         self.shots += 1
         self.state = 'flying'
         self.state_since = time.monotonic()
 
-    def _retire_bird(self, remove_body=False):
+    def _retire_bird(self, remove_body=True):
+        for body, shape in self.split_children:
+            if body in self.space.bodies:
+                self.space.remove(shape, body)
+        self.split_children = []
         if self.bird_body is not None and self.bird_body in self.space.bodies:
             self.space.remove(self.bird_shape, self.bird_body)
         self.bird_body = None
         self.bird_shape = None
         self.bird_rest = 0.0
+
+    def _spawn_split_birds(self, body):
+        """Turn the in-flight split bird into three lighter birds."""
+        for angle in (-22.0, 0.0, 22.0):
+            velocity = body.velocity
+            base = math.atan2(velocity.y, velocity.x) if velocity.length > 1 else body.angle
+            rad = base + math.radians(angle)
+            speed = max(420 * self.scale, velocity.length * 0.92)
+            direction = (math.cos(rad), math.sin(rad))
+            x = body.position.x + direction[0] * self.bird_radius
+            y = body.position.y + direction[1] * self.bird_radius
+            child = pymunk.Body(BIRD_MASS / 3.0, pymunk.moment_for_circle(BIRD_MASS / 3.0, 0, self.bird_radius * 0.6))
+            child.position = (x, y)
+            child.velocity = (direction[0] * speed, direction[1] * speed)
+            shape = pymunk.Circle(child, self.bird_radius * 0.6)
+            shape.friction = 0.75
+            shape.elasticity = 0.35
+            shape.collision_type = C_BIRD
+            self.space.add(child, shape)
+            self.split_children.append((child, shape))
+
+    def _explode_bird(self, body):
+        x, y = body.position
+        self.score += 300
+        radius = 300 * self.scale
+        for other in list(self.space.bodies):
+            if other.body_type != pymunk.Body.DYNAMIC:
+                continue
+            dx, dy = other.position.x - x, other.position.y - y
+            distance = math.hypot(dx, dy)
+            if distance > radius or distance < 1:
+                continue
+            strength = 6000 * (1 - distance / radius) * self.scale
+            other.apply_impulse_at_world_point((dx / distance * strength, dy / distance * strength), other.position)
+        for obj in self.objects:
+            if obj.dead:
+                continue
+            dx, dy = obj.body.position.x - x, obj.body.position.y - y
+            distance = math.hypot(dx, dy)
+            if distance > radius:
+                continue
+            if obj.kind == 'pig' and distance < radius * 0.8:
+                self._pop_pig(obj)
+            elif obj.kind == TNT and distance < radius * 0.7:
+                obj.fuse = 0.08
+            elif obj.kind != 'pig':
+                obj.hp -= (1 - distance / radius) * 2000
+                if obj.hp <= 0:
+                    self._break_block(obj)
+        self._retire_bird()
+        self.state = 'between'
+        self.state_since = time.monotonic()
+
+    def trigger_ability(self):
+        if self.state != 'flying' or self.bird_body is None:
+            return
+        if self.ability_used:
+            return
+        if self.bird_kind == BOMB:
+            self.ability_used = True
+            self._explode_bird(self.bird_body)
+        elif self.bird_kind == SPLIT:
+            self.ability_used = True
+            parent, parent_shape = self.bird_body, self.bird_shape
+            self._spawn_split_birds(parent)
+            if parent in self.space.bodies:
+                self.space.remove(parent_shape, parent)
+            body, shape = self.split_children[0]
+            self.bird_body = body
+            self.bird_shape = shape
+            self.bird_rest = 0.0
+            self.bird_launched_at = time.monotonic()
+            self.state = 'flying'
+            self.state_since = time.monotonic()
 
     # -- simulation --------------------------------------------------------
     def _on_collision(self, arbiter, space, data):
@@ -506,17 +761,18 @@ class AngryBirdsGame:
                 obj.fuse += dt
                 if obj.fuse >= 0.001:
                     self._explode(obj)
-        if self.state == 'flying' and self.bird_body is not None:
-            body = self.bird_body
-            speed = body.velocity.length
-            pos = body.position
-            if speed < 26 * self.scale:
+        if self.state == 'flying' and self._flying_bodies():
+            bodies = self._flying_bodies()
+            fastest = max(body.velocity.length for body in bodies)
+            if fastest < 26 * self.scale:
                 self.bird_rest += dt
             else:
                 self.bird_rest = 0.0
-            out = pos.x < -300 or pos.x > self.width + 300 or pos.y > self.height + 300
+            out = all(body.position.x < -300 or body.position.x > self.width + 300
+                      or body.position.y > self.height + 300 for body in bodies)
             if out or self.bird_rest > 0.75 or time.monotonic() - self.bird_launched_at > 9.0:
-                self.bird_pose = (pos.x, pos.y, body.angle)
+                body = bodies[0]
+                self.bird_pose = (body.position.x, body.position.y, body.angle)
                 self._retire_bird()
                 self.state = 'between'
                 self.state_since = time.monotonic()
@@ -531,10 +787,18 @@ class AngryBirdsGame:
                     self.state = 'ready'
                     self.state_since = time.monotonic()
                     self.current_bird = self.shots
+                    self.bird_kind = self.level.types[self.shots]
         if self.state not in ('won', 'lost') and not self._pigs_alive():
             self.state = 'won'
             self.state_since = time.monotonic()
             self._win()
+
+    def _flying_bodies(self):
+        bodies = [body for body, _shape in self.split_children if body in self.space.bodies]
+        if (self.bird_body is not None and self.bird_body in self.space.bodies
+                and all(self.bird_body is not body for body in bodies)):
+            bodies.append(self.bird_body)
+        return bodies
 
     def _pigs_alive(self):
         return any(obj.kind == 'pig' and not obj.dead for obj in self.objects)
@@ -560,6 +824,11 @@ class AngryBirdsGame:
         return 1
 
     # -- display helpers ---------------------------------------------------
+    def split_poses(self):
+        """Centres of the split bird's children while they are in flight."""
+        return [(body.position.x, body.position.y) for body, _shape in self.split_children
+                if body in self.space.bodies]
+
     def bird_screen_pose(self):
         """Centre, angle and alpha for the current bird sprite."""
         if self.state == 'ready':
