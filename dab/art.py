@@ -128,21 +128,52 @@ def background(width, height, ground_y, sling_x, fork_y, scale, wallpaper=None):
     return image
 
 
+def ability_tag(text, scale=1.0):
+    """A small floating pill that explains a special bird's one-click ability."""
+    fnt = font(max(10, round(14 * scale)), bold=True)
+    probe = ImageDraw.Draw(Image.new('RGBA', (1, 1)))
+    box = probe.textbbox((0, 0), text, font=fnt)
+    tw, th = box[2] - box[0], box[3] - box[1]
+    pad_x, pad_y = max(7, round(9 * scale)), max(4, round(5 * scale))
+    width, height = tw + pad_x * 2, th + pad_y * 2 + max(4, round(6 * scale))
+    image = Image.new('RGBA', (width, height + max(4, round(7 * scale))), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((0, 0, width - 1, height - 1), radius=height // 2,
+                           fill=(24, 32, 30, 238), outline=(255, 214, 130, 235),
+                           width=max(1, round(1.5 * scale)))
+    draw.text((pad_x - box[0], pad_y - box[1]), text, font=fnt, fill=CREAM)
+    # little pointer towards the bird
+    tip = height + max(3, round(5 * scale))
+    draw.polygon([(width / 2 - 5 * scale, height - 1), (width / 2 + 5 * scale, height - 1),
+                  (width / 2, tip)], fill=(255, 214, 130, 235))
+    return image
+
+
 def block_sprite(kind, width, height):
     width, height = max(6, int(round(width))), max(6, int(round(height)))
     wood = kind == 'wood'
+    ice = kind == 'ice'
 
     def painter(draw, f):
         w, h = width * f, height * f
         pad = 2 * f
         radius = min(w, h) * 0.16
-        if wood:
+        if ice:
+            base, light, dark, line = (170, 224, 242), (226, 249, 255), (94, 158, 192), (118, 186, 214)
+        elif wood:
             base, light, dark, line = (181, 126, 66), (214, 160, 95), (111, 71, 33), (139, 91, 45)
         else:
             base, light, dark, line = (139, 143, 150), (177, 181, 187), (82, 86, 93), (107, 111, 118)
-        draw.rounded_rectangle((pad, pad, w - pad, h - pad), radius=radius, fill=base + (255,),
+        draw.rounded_rectangle((pad, pad, w - pad, h - pad), radius=radius, fill=base + (235 if ice else 255,),
                                outline=dark + (255,), width=max(1, int(2 * f)))
-        if wood:
+        if ice:
+            # A couple of diagonal cracks read as "fragile" next to wood and stone.
+            draw.line((w * 0.28, pad, w * 0.42, h * 0.45, w * 0.3, h * 0.62, w * 0.46, h - pad),
+                      fill=light + (235,), width=max(1, int(2 * f)))
+            draw.line((w * 0.68, pad, w * 0.56, h * 0.35, w * 0.72, h * 0.55),
+                      fill=(255, 255, 255, 220), width=max(1, int(1.5 * f)))
+            draw.rectangle((pad + 4 * f, pad + 4 * f, w - pad - 4 * f, pad + 7 * f), fill=(255, 255, 255, 210))
+        elif wood:
             step = max(8 * f, min(h, w) / 5)
             y = step
             while y < h - pad:
