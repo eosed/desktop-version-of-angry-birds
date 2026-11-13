@@ -19,6 +19,8 @@
 
 32 关按“木屋 → 冰桥 → 石堡 → 混合城堡”逐步升级，参考原版愤怒的小鸟的结构思路：塔楼、拱桥、厚墙、L 形要塞、地下猪、双岛、叠叠乐等轮廓轮换出现，木/冰/石三种材质混搭，猪会藏在屋顶下、梁后或墙体夹层里，TNT 用来引发连锁坍塌。
 
+![关卡布局示例](docs/levels.png)
+
 ## 下载
 
 Windows 免安装单文件版：[GitHub Releases](https://github.com/eosed/desktop-version-of-angry-birds/releases/latest)。下载 `DesktopAngryBirds.exe` 直接运行。
