@@ -75,6 +75,18 @@ class GameTests(unittest.TestCase):
             17: [(-3, None), (-6, 0.6)],
             18: [(-7.5, None), (6, None)],
             19: [(-18, None), (-10, 0.8), (-7.5, 0.4)],
+            20: [(-17, None)],
+            21: [(-17, None), (0, 0.35)],
+            22: [(-16, None), (-18, 0.7)],
+            23: [(-12.5, None)],
+            24: [(-0.5, None), (-18, None)],
+            25: [(-13, None)],
+            26: [(-1, None), (-17, None)],
+            27: [(-9.5, None), (-12.5, 0.7), (-3, 0.35)],
+            28: [(-3, None), (-18, None)],
+            29: [(-0.5, None), (-16, 0.7)],
+            30: [(0, None), (-17, None)],
+            31: [(-17.5, None), (-17.5, None)],
         }
         self.assertEqual(len(cases), len(LEVELS))
         for index, shots in cases.items():

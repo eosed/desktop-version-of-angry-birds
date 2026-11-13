@@ -89,6 +89,40 @@ def _p(x, y, radius=30.0):
     return (x, y, radius)
 
 
+def _floor(cx, base, width, kind=WOOD, leg_w=24.0, leg_h=120.0, beam_h=24.0):
+    """Two legs plus a beam; returns its blocks and the height of the beam top."""
+    half = width / 2 - leg_w / 2
+    blocks = [
+        _b(kind, cx - half, base + leg_h / 2, leg_w, leg_h),
+        _b(kind, cx + half, base + leg_h / 2, leg_w, leg_h),
+        _b(kind, cx, base + leg_h + beam_h / 2, width, beam_h),
+    ]
+    return blocks, base + leg_h + beam_h
+
+
+def _tower(cx, floors, pigs=(), base=0.0, width=190.0, kind=WOOD):
+    """A multi-storey hut, one pig standing on each storey (bottom first)."""
+    blocks, placed = [], []
+    y = base
+    for floor in range(floors):
+        part, top = _floor(cx, y, width, kind)
+        blocks += part
+        if floor < len(pigs) and pigs[floor]:
+            placed.append(_p(cx, y + pigs[floor], pigs[floor]))
+        y = top
+    return blocks, placed, y
+
+
+def _build(name, birds, towers, extra_blocks=(), extra_pigs=(), tnt=(), two=0, three=0):
+    """Compose a level from towers: (cx, floors, pig_radii, base, width, kind)."""
+    blocks, pigs = list(extra_blocks), list(extra_pigs)
+    for cx, floors, radii, base, width, kind in towers:
+        part, placed, _top = _tower(cx, floors, radii, base, width, kind)
+        blocks += part
+        pigs += placed
+    return Level(name, birds, blocks, pigs, list(tnt), two, three)
+
+
 LEVELS = [
     Level(
         '小木屋', 4,
@@ -350,6 +384,94 @@ LEVELS = [
         [(200, 30, 46), (300, 170, 46)],
         50000, 76000,
     ),
+    _build(
+        '三层塔', 5,
+        [(0, 3, (28, 30, 32), 0.0, 200.0, WOOD)],
+        extra_pigs=[_p(-260, 30, 28), _p(260, 30, 28)],
+        tnt=[(-190, 30, 44)],
+        two=42000, three=64000,
+    ),
+    _build(
+        '四层塔', 6,
+        [(0, 4, (26, 28, 30, 34), 0.0, 210.0, WOOD)],
+        extra_pigs=[_p(-280, 30, 30), _p(280, 30, 30)],
+        two=48000, three=72000,
+    ),
+    _build(
+        '双三层', 6,
+        [(-250, 3, (28, 30, 28), 0.0, 190.0, WOOD),
+         (250, 3, (30, 28, 30), 0.0, 190.0, WOOD)],
+        tnt=[(0, 30, 44)],
+        two=52000, three=78000,
+    ),
+    _build(
+        '石塔', 6,
+        [(0, 3, (30, 34, 38), 0.0, 230.0, STONE)],
+        extra_pigs=[_p(-260, 30, 28), _p(260, 30, 28)],
+        two=50000, three=76000,
+    ),
+    _build(
+        '五层塔', 7,
+        [(0, 5, (24, 26, 28, 30, 34), 0.0, 210.0, WOOD),
+         (-350, 1, (30,), 0.0, 150.0, WOOD),
+         (350, 1, (30,), 0.0, 150.0, WOOD)],
+        two=62000, three=92000,
+    ),
+    _build(
+        '双四层', 7,
+        [(-260, 4, (26, 28, 30, 32), 0.0, 190.0, WOOD),
+         (260, 4, (32, 30, 28, 26), 0.0, 190.0, WOOD)],
+        extra_pigs=[_p(0, 30, 30)],
+        tnt=[(-60, 30, 44), (60, 30, 44)],
+        two=66000, three=96000,
+    ),
+    _build(
+        '巨猪堡', 7,
+        [(0, 3, (42, 48, 54), 0.0, 280.0, STONE),
+         (-340, 2, (30, 28), 0.0, 160.0, WOOD),
+         (340, 2, (28, 30), 0.0, 160.0, WOOD)],
+        two=68000, three=100000,
+    ),
+    _build(
+        '终局二', 8,
+        [(0, 4, (28, 30, 34, 40), 0.0, 240.0, WOOD),
+         (-340, 2, (30, 30), 0.0, 160.0, STONE),
+         (340, 2, (30, 30), 0.0, 160.0, WOOD)],
+        tnt=[(0, 30, 46)],
+        two=72000, three=106000,
+    ),
+    _build(
+        '四方塔', 8,
+        [(-380, 2, (28, 30), 0.0, 150.0, WOOD),
+         (-130, 2, (30, 28), 0.0, 150.0, WOOD),
+         (130, 2, (28, 30), 0.0, 150.0, WOOD),
+         (380, 2, (30, 28), 0.0, 150.0, WOOD)],
+        tnt=[(0, 30, 44)],
+        two=70000, three=104000,
+    ),
+    _build(
+        '铁三角', 8,
+        [(-320, 3, (28, 30, 32), 0.0, 190.0, STONE),
+         (0, 3, (30, 32, 34), 0.0, 200.0, STONE),
+         (320, 3, (32, 30, 28), 0.0, 190.0, STONE)],
+        two=76000, three=112000,
+    ),
+    _build(
+        '猪王大城', 9,
+        [(0, 5, (34, 40, 46, 50, 54), 0.0, 280.0, STONE),
+         (-340, 3, (28, 30, 32), 0.0, 170.0, WOOD),
+         (340, 3, (32, 30, 28), 0.0, 170.0, WOOD)],
+        tnt=[(-470, 30, 44), (470, 30, 44)],
+        two=84000, three=124000,
+    ),
+    _build(
+        '最后一战', 9,
+        [(0, 4, (30, 34, 38, 44), 0.0, 240.0, WOOD),
+         (-360, 2, (30, 32), 0.0, 160.0, STONE),
+         (360, 2, (32, 30), 0.0, 160.0, STONE)],
+        tnt=[(-200, 30, 44), (200, 30, 44)],
+        two=90000, three=132000,
+    ),
 ]
 
 
@@ -488,7 +610,9 @@ class AngryBirdsGame:
         shape.elasticity = 0.25
         shape.collision_type = C_PIG
         variant = sum(1 for item in self.objects if item.kind == 'pig')
-        obj = self._new_object('pig', body, shape, radius * 2, radius * 2, 100.0, radius)
+        # Big pigs are visibly bigger icons, so they also soak more damage.
+        hp = 100.0 * (radius / (30.0 * self.scale)) ** 2
+        obj = self._new_object('pig', body, shape, radius * 2, radius * 2, hp, radius)
         obj.variant = variant
 
     def _add_tnt(self, x, y, size):
