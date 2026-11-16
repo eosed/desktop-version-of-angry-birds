@@ -24,12 +24,13 @@ def run_seconds(game, clock, seconds):
         game.step(1 / 60)
 
 
-def shoot(game, angle):
+def shoot(game, angle, power=1.0):
     assert game.state == 'ready', game.state
     direction = (math.cos(math.radians(angle)), math.sin(math.radians(angle)))
     ax, ay = game.anchor
+    pull = game.max_drag * power
     game.begin_drag(ax, ay)
-    game.drag_to(ax - direction[0] * game.max_drag, ay - direction[1] * game.max_drag)
+    game.drag_to(ax - direction[0] * pull, ay - direction[1] * pull)
     game.release()
     assert game.state == 'flying', game.state
 
@@ -54,39 +55,40 @@ class GameTests(unittest.TestCase):
                     self.assertGreaterEqual(obj.hp, hp - 1.0)
 
     def test_each_level_can_be_won(self):
+        # (angle, power, ability delay) per shot, found with _probe.py at 2560x1380.
         cases = {
-            0: [(-9, None)],
-            1: [(-7, None)],
-            2: [(-7, None), (-18, 0.7)],
-            3: [(-8, None)],
-            4: [(-15, None)],
-            5: [(-12, None)],
-            6: [(-10, None)],
-            7: [(-6, None), (-2, 0.7)],
-            8: [(-10, None), (-1, 0.7)],
-            9: [(-4, None), (-26, 0.7)],
-            10: [(-22, None)],
-            11: [(-17, None), (-5, 1.0)],
-            12: [(-9, None), (0, 0.7)],
-            13: [(-3, None), (-7, 0.7)],
-            14: [(1, None), (-25, 1.0)],
-            15: [(-21, None), (-13, 0.7)],
-            16: [(-6, None), (-6, 0.7)],
-            17: [(-10, None)],
-            18: [(-2, None), (-1, None)],
-            19: [(-26, None)],
-            20: [(-5, None)],
-            21: [(-5, None), (-6, 0.7)],
-            22: [(-7, None), (-19, 0.7)],
-            23: [(-1, None), (-5, 0.35)],
-            24: [(-5, None), (4, None)],
-            25: [(-8, None), (-6, 0.7)],
-            26: [(-2, None), (-27, 0.7)],
-            27: [(-8, None), (-2, 0.35)],
-            28: [(-14, None)],
-            29: [(-18, None)],
-            30: [(-8, None), (-11, 0.7)],
-            31: [(-1, None), (0, 1.0)],
+            0: [(-15, 0.85, None)],
+            1: [(-8, 0.85, None), (-20, 0.85, None)],
+            2: [(-11, 0.85, None)],
+            3: [(-5, 1.0, None), (-26, 0.85, None)],
+            4: [(-24, 0.85, None)],
+            5: [(3, 0.85, None), (-2, 0.85, None)],
+            6: [(-22, 0.85, None)],
+            7: [(-2, 0.85, None), (-4, 1.0, 0.5), (0, 1.0, None)],
+            8: [(-17, 0.85, None), (-8, 1.0, None), (-4, 0.85, None)],
+            9: [(4, 0.85, None)],
+            10: [(-21, 0.85, None)],
+            11: [(-9, 1.0, None), (-14, 1.0, None), (-8, 0.85, 0.5)],
+            12: [(16, 1.0, None), (-29, 1.0, None)],
+            13: [(4, 0.85, None)],
+            14: [(-9, 1.0, None), (-13, 1.0, 0.5)],
+            15: [(-2, 1.0, None), (-4, 1.0, None)],
+            16: [(-29, 1.0, None)],
+            17: [(-24, 1.0, None), (-13, 0.85, None)],
+            18: [(-1, 1.0, None), (-8, 1.0, 0.5), (-32, 0.85, 0.5)],
+            19: [(-2, 0.85, None)],
+            20: [(-6, 0.85, None), (-21, 0.85, None)],
+            21: [(-1, 0.85, None), (-32, 0.85, None)],
+            22: [(-19, 1.0, None), (-23, 0.85, None)],
+            23: [(-6, 1.0, None), (2, 1.0, None)],
+            24: [(-25, 0.85, None), (-28, 1.0, None)],
+            25: [(3, 1.0, None), (2, 0.85, None), (-32, 0.85, None)],
+            26: [(6, 1.0, None), (-32, 0.85, None)],
+            27: [(9, 0.85, None), (-19, 1.0, None), (-32, 0.85, None)],
+            28: [(-1, 1.0, None), (-21, 0.85, None), (15, 1.0, 0.5), (-30, 0.85, None)],
+            29: [(1, 0.85, None), (-23, 0.85, None), (-32, 0.85, None)],
+            30: [(-13, 0.85, None), (-31, 0.85, None)],
+            31: [(-16, 1.0, None), (-12, 1.0, None), (0, 0.85, 0.5), (-32, 0.85, None)],
         }
         self.assertEqual(len(cases), len(LEVELS))
         for index, shots in cases.items():
@@ -94,10 +96,10 @@ class GameTests(unittest.TestCase):
             with patch('dab.game.time.monotonic', clock):
                 game = AngryBirdsGame(2560, 1380)
                 game.load_level(index)
-                for angle, delay in shots:
+                for angle, power, delay in shots:
                     if game.state == 'won':
                         break
-                    shoot(game, angle)
+                    shoot(game, angle, power)
                     if delay is not None:
                         run_seconds(game, clock, delay)
                         game.trigger_ability()

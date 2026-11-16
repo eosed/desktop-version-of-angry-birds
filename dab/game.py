@@ -12,6 +12,10 @@ from dataclasses import dataclass, field
 
 import pymunk
 
+from .levels import (
+    LEVELS, Level, WOOD, STONE, ICE, RED, BOMB, SPLIT, BIRD_NAMES,
+)
+
 GRAVITY = 1400.0
 MAX_DRAG = 130.0
 MIN_DRAG = 16.0
@@ -19,14 +23,7 @@ MAX_LAUNCH = 1650.0
 BIRD_MASS = 7.0
 BIRD_RADIUS = 34.0
 
-WOOD = 'wood'
-STONE = 'stone'
-ICE = 'ice'
 TNT = 'tnt'
-RED = 'red'
-BOMB = 'bomb'
-SPLIT = 'split'
-BIRD_NAMES = {RED: '红鸟', BOMB: '炸弹鸟', SPLIT: '分裂鸟'}
 
 # collision types
 C_GROUND = 1
@@ -63,457 +60,6 @@ class GameObject:
         return self.body.angle
 
 
-@dataclass
-class Level:
-    name: str
-    birds: int
-    blocks: list
-    pigs: list
-    tnt: list
-    two_star: int
-    three_star: int
-    bird_types: tuple = ()
-
-    @property
-    def types(self):
-        """A deterministic red/bomb/split cycle, with authored specials first."""
-        authored = tuple(self.bird_types)
-        cycle = (RED, BOMB, SPLIT) * self.birds
-        return (authored + cycle)[:self.birds]
-
-
-def _b(kind, x, y, w, h, angle=0.0):
-    return (kind, x, y, w, h, angle)
-
-
-def _p(x, y, radius=30.0):
-    return (x, y, radius)
-
-
-LEVELS = [
-    Level(
-        '小木屋', 4,
-        [
-            _b(WOOD, -70, 60, 24, 120),
-            _b(WOOD, 70, 60, 24, 120),
-            _b(WOOD, 0, 132, 180, 24),
-        ],
-        [_p(0, 30, 28), _p(0, 172, 28)],
-        [],
-        12000, 20000,
-    ),
-    Level(
-        '双塔', 4,
-        [
-            _b(WOOD, -90, 80, 32, 160),
-            _b(WOOD, 90, 80, 32, 160),
-            _b(STONE, 0, 172, 240, 24),
-        ],
-        [_p(-40, 30, 30), _p(40, 30, 30), _p(0, 214, 30)],
-        [],
-        18000, 28000,
-    ),
-    Level(
-        '石头城堡', 5,
-        [
-            _b(STONE, -120, 70, 40, 140),
-            _b(STONE, 0, 70, 40, 140),
-            _b(STONE, 120, 70, 40, 140),
-            _b(STONE, 0, 153, 360, 26),
-            _b(WOOD, -70, 221, 30, 110),
-            _b(WOOD, 70, 221, 30, 110),
-            _b(STONE, 0, 288, 220, 24),
-        ],
-        [_p(-60, 30, 30), _p(60, 30, 30), _p(0, 196, 30), _p(0, 330, 30)],
-        [(150, 30, 46)],
-        26000, 40000,
-    ),
-    Level(
-        '门廊', 5,
-        [
-            _b(WOOD, -240, 60, 30, 120),
-            _b(WOOD, 240, 60, 30, 120),
-            _b(WOOD, 0, 132, 520, 26),
-            _b(WOOD, -140, 190, 24, 90),
-            _b(WOOD, 140, 190, 24, 90),
-            _b(WOOD, 0, 247, 340, 20),
-        ],
-        [_p(-140, 30, 28), _p(140, 30, 28), _p(0, 172, 28)],
-        [(0, 30, 44)],
-        30000, 50000,
-    ),
-    Level(
-        '塔楼', 5,
-        [
-            _b(WOOD, -70, 60, 24, 120),
-            _b(WOOD, 70, 60, 24, 120),
-            _b(WOOD, 0, 132, 180, 24),
-            _b(WOOD, -50, 190, 24, 90),
-            _b(WOOD, 50, 190, 24, 90),
-            _b(WOOD, 0, 247, 140, 24),
-        ],
-        [_p(0, 30, 28), _p(0, 176, 28), _p(0, 289, 28)],
-        [],
-        22000, 34000,
-    ),
-    Level(
-        '冰桥', 5,
-        [
-            _b(ICE, -180, 60, 30, 120),
-            _b(ICE, 0, 60, 30, 120),
-            _b(ICE, 180, 60, 30, 120),
-            _b(WOOD, 0, 132, 440, 24),
-        ],
-        [_p(-90, 30, 28), _p(90, 30, 28), _p(-120, 172, 28), _p(120, 172, 28)],
-        [],
-        28000, 44000,
-    ),
-    Level(
-        '火药塔', 5,
-        [
-            _b(STONE, -90, 70, 36, 140),
-            _b(STONE, 90, 70, 36, 140),
-            _b(STONE, 0, 152, 240, 24),
-            _b(WOOD, -50, 210, 28, 90),
-            _b(WOOD, 50, 210, 28, 90),
-            _b(WOOD, 0, 267, 150, 24),
-        ],
-        [_p(-40, 30, 28), _p(40, 30, 28), _p(0, 309, 28)],
-        [(0, 30, 46)],
-        32000, 50000,
-    ),
-    Level(
-        '双桥', 5,
-        [
-            _b(STONE, -310, 70, 36, 140),
-            _b(STONE, -210, 70, 36, 140),
-            _b(STONE, -260, 153, 160, 24),
-            _b(ICE, 210, 60, 28, 120),
-            _b(ICE, 310, 60, 28, 120),
-            _b(ICE, 260, 132, 160, 24),
-        ],
-        [_p(-260, 30, 30), _p(-260, 196, 30), _p(260, 30, 28), _p(260, 172, 28)],
-        [],
-        32000, 50000,
-    ),
-    Level(
-        '木寨', 5,
-        [
-            _b(WOOD, -310, 60, 24, 120),
-            _b(WOOD, -170, 60, 24, 120),
-            _b(WOOD, -240, 132, 180, 24),
-            _b(WOOD, 170, 60, 24, 120),
-            _b(WOOD, 310, 60, 24, 120),
-            _b(WOOD, 240, 132, 180, 24),
-        ],
-        [_p(-240, 30, 28), _p(-240, 172, 28), _p(240, 30, 28), _p(240, 172, 28)],
-        [(0, 30, 46)],
-        34000, 54000,
-    ),
-    Level(
-        '石堡', 5,
-        [
-            _b(STONE, -150, 70, 40, 140),
-            _b(STONE, 0, 70, 40, 140),
-            _b(STONE, 150, 70, 40, 140),
-            _b(STONE, 0, 153, 400, 26),
-            _b(WOOD, -70, 210, 28, 90),
-            _b(WOOD, 70, 210, 28, 90),
-            _b(WOOD, 0, 267, 200, 24),
-        ],
-        [_p(-70, 30, 30), _p(70, 30, 30), _p(-120, 196, 30), _p(120, 196, 30),
-         _p(0, 309, 30)],
-        [],
-        38000, 58000,
-    ),
-    Level(
-        '通天塔', 6,
-        [
-            _b(ICE, -70, 60, 24, 120),
-            _b(ICE, 70, 60, 24, 120),
-            _b(ICE, 0, 132, 180, 24),
-            _b(WOOD, -50, 190, 24, 90),
-            _b(WOOD, 50, 190, 24, 90),
-            _b(WOOD, 0, 247, 140, 24),
-            _b(WOOD, -34, 300, 20, 80),
-            _b(WOOD, 34, 300, 20, 80),
-        ],
-        [_p(0, 30, 28), _p(0, 176, 28), _p(0, 289, 28), _p(0, 362, 28)],
-        [],
-        36000, 56000,
-    ),
-    Level(
-        '猪王堡', 7,
-        [
-            _b(STONE, -240, 70, 40, 140),
-            _b(STONE, -120, 70, 40, 140),
-            _b(STONE, 0, 70, 40, 140),
-            _b(STONE, 120, 70, 40, 140),
-            _b(STONE, 240, 70, 40, 140),
-            _b(STONE, 0, 153, 600, 26),
-            _b(WOOD, -70, 210, 28, 90),
-            _b(WOOD, 70, 210, 28, 90),
-            _b(WOOD, 0, 267, 200, 24),
-        ],
-        [_p(-180, 30, 30), _p(180, 30, 30), _p(-120, 196, 30),
-         _p(0, 196, 30), _p(120, 196, 30), _p(0, 309, 30)],
-        [(180, 30, 46)],
-        42000, 66000,
-    ),
-    Level(
-        '松林', 5,
-        [
-            _b(WOOD, -340, 60, 24, 120), _b(WOOD, -200, 60, 24, 120),
-            _b(WOOD, -270, 132, 180, 24),
-            _b(WOOD, 200, 60, 24, 120), _b(WOOD, 340, 60, 24, 120),
-            _b(WOOD, 270, 132, 180, 24),
-        ],
-        [_p(-270, 30, 28), _p(-270, 172, 28), _p(270, 30, 28), _p(270, 172, 28)],
-        [(100, 30, 42)],
-        38000, 58000,
-    ),
-    Level(
-        '石墙', 5,
-        [
-            _b(STONE, -260, 65, 36, 130), _b(STONE, -120, 65, 36, 130),
-            _b(STONE, 20, 65, 36, 130), _b(STONE, 160, 65, 36, 130),
-            _b(STONE, -120, 145, 420, 24),
-            _b(WOOD, -40, 210, 28, 90), _b(WOOD, 100, 210, 28, 90),
-            _b(WOOD, 30, 267, 170, 24),
-        ],
-        [_p(-200, 30, 28), _p(-40, 30, 28), _p(120, 30, 28),
-         _p(-120, 196, 28), _p(120, 196, 28)],
-        [],
-        40000, 60000,
-    ),
-    Level(
-        '三连堡', 5,
-        [
-            _b(WOOD, -390, 60, 24, 120), _b(WOOD, -250, 60, 24, 120),
-            _b(WOOD, -320, 132, 180, 24),
-            _b(WOOD, -70, 60, 24, 120), _b(WOOD, 70, 60, 24, 120),
-            _b(WOOD, 0, 132, 180, 24),
-            _b(WOOD, 250, 60, 24, 120), _b(WOOD, 390, 60, 24, 120),
-            _b(WOOD, 320, 132, 180, 24),
-        ],
-        [_p(-320, 30, 28), _p(-320, 172, 28), _p(0, 30, 28), _p(0, 172, 28),
-         _p(320, 30, 28), _p(320, 172, 28)],
-        [(0, 230, 46)],
-        44000, 66000,
-    ),
-    Level(
-        '终局', 6,
-        [
-            _b(STONE, -280, 75, 40, 150), _b(STONE, -140, 75, 40, 150),
-            _b(STONE, 0, 75, 40, 150), _b(STONE, 140, 75, 40, 150),
-            _b(STONE, 0, 163, 460, 26),
-            _b(WOOD, -70, 220, 28, 90), _b(WOOD, 70, 220, 28, 90),
-            _b(WOOD, 0, 277, 200, 24),
-            _b(WOOD, -40, 330, 24, 80), _b(WOOD, 40, 330, 24, 80),
-            _b(WOOD, 0, 380, 130, 20),
-        ],
-        [_p(-200, 30, 30), _p(0, 30, 30), _p(200, 30, 30),
-         _p(-70, 196, 30), _p(70, 196, 30), _p(0, 309, 30)],
-        [(200, 30, 46), (300, 170, 46)],
-        50000, 76000,
-    ),
-    Level(
-        '双拱', 5,
-        [
-            _b(STONE, -330, 70, 36, 140), _b(STONE, -170, 70, 36, 140),
-            _b(STONE, -250, 153, 220, 26),
-            _b(STONE, 170, 70, 36, 140), _b(STONE, 330, 70, 36, 140),
-            _b(STONE, 250, 153, 220, 26),
-        ],
-        [_p(-250, 30, 28), _p(-250, 196, 28), _p(250, 30, 28), _p(250, 196, 28)],
-        [],
-        30000, 46000,
-    ),
-    Level(
-        '石瓮', 5,
-        [
-            _b(STONE, -180, 75, 36, 150), _b(STONE, 180, 75, 36, 150),
-            _b(STONE, 0, 172, 396, 24),
-            _b(WOOD, -90, 216, 24, 60), _b(WOOD, 90, 216, 24, 60),
-        ],
-        [_p(0, 30, 30), _p(-90, 268, 28), _p(90, 268, 28)],
-        [(0, 30, 44)],
-        32000, 50000,
-    ),
-    Level(
-        '木栅', 5,
-        [
-            _b(WOOD, -300, 55, 30, 110), _b(WOOD, -220, 55, 30, 110),
-            _b(WOOD, 180, 60, 24, 120), _b(WOOD, 300, 60, 24, 120),
-            _b(WOOD, 240, 132, 160, 24),
-        ],
-        [_p(-260, 30, 28), _p(-260, 132, 28), _p(240, 30, 28), _p(240, 172, 28)],
-        [],
-        30000, 48000,
-    ),
-    Level(
-        '高脚屋', 6,
-        [
-            _b(WOOD, -110, 100, 22, 200), _b(WOOD, 110, 100, 22, 200),
-            _b(WOOD, 0, 212, 300, 24),
-            _b(WOOD, -70, 270, 20, 90), _b(WOOD, 70, 270, 20, 90),
-            _b(WOOD, 0, 326, 160, 20),
-        ],
-        [_p(0, 30, 30), _p(0, 160, 26), _p(0, 262, 26), _p(0, 376, 26)],
-        [],
-        34000, 52000,
-    ),
-    Level(
-        '冰拱门', 5,
-        [
-            _b(ICE, -160, 60, 30, 120), _b(ICE, 160, 60, 30, 120),
-            _b(ICE, 0, 132, 380, 26),
-            _b(WOOD, -60, 200, 20, 70), _b(WOOD, 60, 200, 20, 70),
-            _b(WOOD, 0, 247, 140, 20),
-        ],
-        [_p(-90, 30, 28), _p(90, 30, 28), _p(0, 175, 30), _p(0, 287, 28)],
-        [],
-        44000, 66000,
-    ),
-    Level(
-        '双子堡', 5,
-        [
-            _b(STONE, -300, 70, 40, 140), _b(STONE, -180, 70, 40, 140),
-            _b(STONE, -240, 153, 200, 26),
-            _b(ICE, 180, 60, 30, 120), _b(ICE, 300, 60, 30, 120),
-            _b(ICE, 240, 132, 180, 26),
-        ],
-        [_p(-240, 30, 30), _p(-240, 196, 28), _p(240, 30, 28), _p(240, 172, 28)],
-        [(0, 30, 44)],
-        48000, 70000,
-    ),
-    Level(
-        '阶梯', 6,
-        [
-            _b(STONE, -180, 60, 40, 120), _b(STONE, 0, 60, 40, 120),
-            _b(STONE, 180, 60, 40, 120), _b(STONE, 0, 132, 440, 26),
-            _b(WOOD, -100, 190, 28, 90), _b(WOOD, 100, 190, 28, 90),
-            _b(WOOD, 0, 247, 240, 24),
-            _b(WOOD, -50, 289, 24, 60), _b(WOOD, 50, 289, 24, 60),
-            _b(WOOD, 0, 331, 160, 20),
-        ],
-        [_p(-110, 30, 28), _p(110, 30, 28), _p(0, 175, 28), _p(0, 287, 26),
-         _p(0, 369, 28)],
-        [],
-        52000, 76000,
-    ),
-    Level(
-        'L形要塞', 6,
-        [
-            _b(STONE, -420, 60, 40, 120), _b(STONE, -220, 60, 40, 120),
-            _b(STONE, -320, 132, 240, 26),
-            _b(ICE, 100, 50, 420, 100),
-        ],
-        [_p(-320, 30, 30), _p(-320, 172, 28), _p(350, 30, 30), _p(100, 130, 28)],
-        [(390, 30, 44)],
-        50000, 74000,
-    ),
-    Level(
-        '地下猪', 6,
-        [
-            _b(STONE, -220, 100, 36, 200), _b(STONE, -80, 100, 36, 200),
-            _b(STONE, 80, 100, 36, 200), _b(STONE, 220, 100, 36, 200),
-            _b(STONE, 0, 226, 560, 52),
-        ],
-        [_p(-150, 30, 30), _p(150, 30, 30), _p(0, 30, 54), _p(0, 282, 32)],
-        [(0, 282, 44)],
-        54000, 78000,
-    ),
-    Level(
-        '三柱阵', 6,
-        [
-            _b(ICE, -330, 80, 34, 160), _b(ICE, -110, 80, 34, 160),
-            _b(ICE, 110, 80, 34, 160), _b(ICE, 330, 80, 34, 160),
-            _b(STONE, -330, 172, 100, 20), _b(STONE, -110, 172, 100, 20),
-            _b(STONE, 110, 172, 100, 20), _b(STONE, 330, 172, 100, 20),
-        ],
-        [_p(-220, 30, 28), _p(0, 30, 28), _p(220, 30, 28),
-         _p(-110, 210, 28), _p(110, 210, 28)],
-        [],
-        56000, 80000,
-    ),
-    Level(
-        '冰墙', 6,
-        [
-            _b(ICE, -400, 80, 80, 160), _b(ICE, -200, 80, 80, 160),
-            _b(ICE, 0, 80, 80, 160), _b(ICE, 200, 80, 80, 160),
-            _b(ICE, 400, 80, 80, 160), _b(WOOD, 0, 172, 1000, 24),
-        ],
-        [_p(-100, 30, 28), _p(100, 30, 28), _p(-200, 212, 28), _p(200, 212, 28)],
-        [(0, 212, 44)],
-        58000, 82000,
-    ),
-    Level(
-        '双岛', 6,
-        [
-            _b(WOOD, -370, 60, 24, 120), _b(WOOD, -230, 60, 24, 120),
-            _b(WOOD, -300, 132, 180, 24),
-            _b(STONE, 230, 70, 36, 140), _b(STONE, 370, 70, 36, 140),
-            _b(STONE, 300, 153, 200, 26),
-        ],
-        [_p(-300, 30, 28), _p(-300, 172, 28), _p(300, 30, 30), _p(300, 196, 30)],
-        [(0, 30, 44)],
-        60000, 84000,
-    ),
-    Level(
-        '叠叠乐', 6,
-        [
-            _b(ICE, 0, 30, 360, 60),
-            _b(WOOD, -120, 90, 28, 60), _b(WOOD, 120, 90, 28, 60),
-            _b(WOOD, 0, 132, 280, 24),
-            _b(STONE, -80, 174, 28, 60), _b(STONE, 80, 174, 28, 60),
-            _b(STONE, 0, 216, 220, 24),
-        ],
-        [_p(0, 88, 28), _p(0, 174, 26), _p(0, 258, 30)],
-        [(-200, 30, 44)],
-        62000, 88000,
-    ),
-    Level(
-        '双层盾', 7,
-        [
-            _b(WOOD, 0, 100, 60, 200),
-            _b(ICE, 140, 80, 50, 160),
-            _b(STONE, 260, 60, 40, 120),
-        ],
-        [_p(0, 228, 28), _p(140, 188, 28), _p(390, 30, 30)],
-        [],
-        64000, 90000,
-    ),
-    Level(
-        '石拱桥', 7,
-        [
-            _b(STONE, -240, 90, 40, 180), _b(STONE, -80, 90, 40, 180),
-            _b(STONE, 80, 90, 40, 180), _b(STONE, 240, 90, 40, 180),
-            _b(STONE, 0, 192, 560, 24),
-            _b(WOOD, -70, 249, 28, 90), _b(WOOD, 70, 249, 28, 90),
-            _b(WOOD, 0, 306, 180, 24),
-        ],
-        [_p(-160, 30, 30), _p(160, 30, 30), _p(0, 234, 28), _p(0, 348, 30)],
-        [(240, 30, 46)],
-        68000, 94000,
-    ),
-    Level(
-        '猪王殿', 9,
-        [
-            _b(STONE, -380, 100, 40, 200), _b(STONE, -200, 100, 40, 200),
-            _b(STONE, 200, 100, 40, 200), _b(STONE, 380, 100, 40, 200),
-            _b(STONE, 0, 226, 840, 52),
-            _b(ICE, -80, 60, 28, 120), _b(ICE, 80, 60, 28, 120),
-            _b(WOOD, 0, 132, 240, 24),
-        ],
-        [_p(-290, 30, 30), _p(290, 30, 30), _p(0, 30, 54),
-         _p(0, 172, 26), _p(0, 294, 42)],
-        [(-140, 30, 44), (140, 30, 44)],
-        76000, 108000,
-    ),
-]
-
-
 class AngryBirdsGame:
     """Authoritative game state, physics and level flow."""
 
@@ -532,9 +78,14 @@ class AngryBirdsGame:
         self.bird_radius = BIRD_RADIUS * self.scale
         self.space = pymunk.Space()
         self.space.gravity = (0.0, GRAVITY * self.scale)
-        self.space.iterations = 30
-        self.space.sleep_time_threshold = 0.45
-        self.space.idle_speed_threshold = 0.2
+        # Ten-plus storey towers need a much stiffer solver; at 30 iterations the
+        # stack slowly creeps sideways while it is standing still.
+        self.space.iterations = 150
+        # Let a settled castle go to sleep quickly.  Tall towers keep a tiny
+        # residual velocity that never quite reaches zero, so the idle threshold
+        # has to be generous or they creep forever.
+        self.space.sleep_time_threshold = 0.15
+        self.space.idle_speed_threshold = 1.0
         self.space.collision_slop = 0.5
         self.space.on_collision(None, None, post_solve=self._on_collision)
         self._next_uid = 1
@@ -599,6 +150,14 @@ class AngryBirdsGame:
         self.drag_point = None
         base_x = self.width * 0.70
         s = self.scale
+        # The wide late levels are authored around the centre; keep their right
+        # edge on the screen by nudging the castle left instead of clipping it.
+        right = max([b[1] + max(abs(b[3]), abs(b[4])) / 2 for b in self.level.blocks]
+                    + [p[0] + p[2] for p in self.level.pigs]
+                    + [t[0] + t[2] for t in self.level.tnt])
+        overflow = base_x + right * s - (self.width - 16)
+        if overflow > 0:
+            base_x = max(self.sling_x + 220 * s, base_x - overflow)
         for kind, dx, dy, w, h, angle in self.level.blocks:
             self._add_block(kind, base_x + dx * s, self.ground_y - dy * s, w * s, h * s, angle)
         for dx, dy, radius in self.level.pigs:
@@ -608,8 +167,8 @@ class AngryBirdsGame:
         # Let the tower settle before the first shot. Damage is muted here: a pig that
         # starts a few pixels above its platform must not die from the settling drop.
         self.settling = True
-        for _ in range(120):
-            self.space.step(1 / 120.0)
+        for _ in range(400):
+            self.space.step(1 / 150.0)
         self.score = 0
         for obj in self.objects:
             if not obj.dead:

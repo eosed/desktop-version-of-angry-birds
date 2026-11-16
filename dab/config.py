@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-VERSION = '1.6.0'
+VERSION = '1.7.0'
 PRODUCT_NAME = '桌面版愤怒的小鸟'
 WINDOW_TITLE = 'Desktop version of Angry Birds'
 BASE = Path(__file__).resolve().parent.parent
