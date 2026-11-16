@@ -20,7 +20,7 @@ GRAVITY = 1400.0
 MAX_DRAG = 130.0
 MIN_DRAG = 16.0
 MAX_LAUNCH = 1650.0
-BIRD_MASS = 7.0
+BIRD_MASS = 26.0
 BIRD_RADIUS = 34.0
 
 TNT = 'tnt'
@@ -113,6 +113,8 @@ class AngryBirdsGame:
         self.clear_serial = 0
         self.last_impact = 0.0
         self.settling = False
+        self.frozen = True
+        self.pending_thaw = False
         self._build_ground()
         self.load_level(0)
 
@@ -174,6 +176,8 @@ class AngryBirdsGame:
             if not obj.dead:
                 obj.hp = obj.max_hp
         self.settling = False
+        self.frozen = True
+        self.pending_thaw = False
 
     def _new_object(self, kind, body, shape, w, h, hp, radius=0.0):
         obj = GameObject(self._next_uid, kind, body, shape, w, h, hp, hp, radius)
@@ -196,11 +200,33 @@ class AngryBirdsGame:
         shape.friction = 0.78 if kind == ICE else 0.86
         shape.elasticity = 0.08
         shape.collision_type = C_BLOCK
+        # Imported levels merge whole walls and beams into one rectangle, so an
+        # area-proportional hit point pool made a wall almost indestructible.
+        # Keep the mass-area relation but weight it so one clean bird hit breaks
+        # an ordinary plank while only the biggest slabs need two or three.
         if kind == ICE:
-            hp = (w * h) * 0.045
+            hp = (w * h) * 0.012
         else:
-            hp = (w * h) * (0.10 if kind == WOOD else 0.16)
-        self._new_object(kind, body, shape, w, h, max(60.0, hp))
+            hp = (w * h) * (0.020 if kind == WOOD else 0.030)
+        obj = self._new_object(kind, body, shape, w, h, max(80.0, hp))
+        # An imported castle is dozens of rectangles stacked on tiny contacts.  Let
+        # its pieces rotate while it is standing and they slowly tip each other
+        # over, even at rest.  A standing block therefore keeps its inertia: it
+        # cannot tip until the first bird actually touches the castle.
+        body.moment = float('inf')
+        body.angular_velocity = 0.0
+        return obj
+
+    def _thaw_castle(self):
+        """Restore normal rotation to the standing castle."""
+        if not self.frozen:
+            return
+        self.frozen = False
+        for obj in self.objects:
+            if obj.dead or obj.kind == 'pig':
+                continue
+            if obj.body.body_type == pymunk.Body.DYNAMIC:
+                obj.body.moment = pymunk.moment_for_box(obj.body.mass, (obj.w, obj.h))
 
     def _add_pig(self, x, y, radius):
         mass = 4.2 * max(0.7, radius / 30.0)
@@ -394,6 +420,9 @@ class AngryBirdsGame:
     def _on_collision(self, arbiter, space, data):
         if self.settling or not arbiter.is_first_contact:
             return
+        if self.frozen and any(shape.collision_type == C_BIRD for shape in arbiter.shapes):
+            # Inertia cannot change during a space step; thaw on the next one.
+            self.pending_thaw = True
         impulse = float(arbiter.total_impulse.length)
         # A tower resting on the ground produces a large support impulse every step.
         # Damage needs a first contact with real incoming speed as well.
@@ -480,8 +509,15 @@ class AngryBirdsGame:
 
     def step(self, dt):
         dt = max(0.001, min(dt, 0.033))
+        if self.pending_thaw:
+            self.pending_thaw = False
+            self._thaw_castle()
         if self.state in ('ready', 'flying', 'between'):
-            self.space.step(dt)
+            # A beam-heavy castle pinches under a single 16 ms step; splitting the
+            # frame into 1/150 s slices keeps the stack stable at any frame rate.
+            substeps = max(1, math.ceil(dt * 150.0))
+            for _ in range(substeps):
+                self.space.step(dt / substeps)
         for obj in self.objects:
             if obj.dead and obj.effect:
                 obj.effect_t += dt

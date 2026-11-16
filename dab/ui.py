@@ -99,13 +99,20 @@ class DesktopAngryBirdsApp:
         self.hint.pack(side='right', padx=8)
         buttons = tk.Frame(outer, bg=BG)
         buttons.pack(fill='x', pady=(6, 0))
-        self.level_buttons = []
-        for index in range(len(LEVELS)):
-            button = self._button(buttons, f'{index + 1}', lambda i=index: self.select_level(i), 2)
-            button.pack(side='left', padx=2)
-            self.level_buttons.append(button)
+        tk.Label(buttons, text='关卡', bg=BG, fg=MUTED,
+                 font=('Microsoft YaHei UI', 9)).pack(side='left', padx=(2, 4))
+        self.level_var = tk.StringVar(value='1')
+        self.level_box = tk.Spinbox(buttons, from_=1, to=len(LEVELS), width=5,
+                                    textvariable=self.level_var, justify='center',
+                                    font=('Microsoft YaHei UI', 10), relief='flat', bd=0,
+                                    bg=CARD, fg=TEXT, buttonbackground=CARD,
+                                    command=self.spin_level)
+        self.level_box.pack(side='left', padx=(0, 6), ipady=3)
+        self.level_box.bind('<Return>', lambda event: self.spin_level())
+        self._button(buttons, '跳到', self.spin_level, 4).pack(side='left', padx=2)
         tk.Frame(buttons, bg=BG, width=12).pack(side='left')
         self._button(buttons, '重玩', self.restart, 6).pack(side='left', padx=2)
+        self._button(buttons, '上一关', self.prev_level, 6).pack(side='left', padx=2)
         self._button(buttons, '下一关', self.next_level, 6).pack(side='left', padx=2)
         self.hide_button = self._button(buttons, '隐藏', self.toggle_hidden, 5)
         self.hide_button.pack(side='left', padx=2)
@@ -197,9 +204,8 @@ class DesktopAngryBirdsApp:
         self.status.configure(
             text=f'第 {game.level_index + 1} 关 · {kind}  '
                  f'得分 {game.score:,}  |  小猪 {game.pigs_left()}  |  小鸟 {game.birds_left}')
-        for index, button in enumerate(self.level_buttons):
-            button.configure(bg='#285542' if index == game.level_index else CARD,
-                             fg=ACCENT if index == game.level_index else TEXT)
+        if self.level_var.get() != str(game.level_index + 1):
+            self.level_var.set(str(game.level_index + 1))
 
     def select_level(self, index):
         if self.overlay is None:
@@ -207,6 +213,18 @@ class DesktopAngryBirdsApp:
         if self.hidden:
             self.toggle_hidden()
         self.overlay.request_level(index)
+
+    def spin_level(self):
+        try:
+            index = int(self.level_var.get()) - 1
+        except ValueError:
+            self.level_var.set(str(self.overlay.game.level_index + 1 if self.overlay else 1))
+            return
+        self.select_level(max(0, min(len(LEVELS) - 1, index)))
+
+    def prev_level(self):
+        if self.overlay is not None:
+            self.select_level(max(0, self.overlay.game.level_index - 1))
 
     def restart(self):
         if self.overlay is not None:

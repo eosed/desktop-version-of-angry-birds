@@ -387,9 +387,10 @@ def hud_card(width, height, level_name, score, pigs, birds, stars, bird_kind='re
     body_f = font(height * 0.20)
     draw.text((24, 12), level_name, font=title_f, fill=(240, 250, 244, 255))
     draw.text((24, height * 0.48), f'得分  {score:,}', font=body_f, fill=(255, 226, 140, 255))
-    draw.text((width * 0.40, height * 0.48), f'小猪  {pigs}', font=body_f, fill=(168, 230, 164, 255))
-    draw.text((width * 0.55, height * 0.48), f'小鸟  {birds}', font=body_f, fill=(255, 190, 180, 255))
-    draw.text((width * 0.68, height * 0.48), BIRD_LABELS.get(bird_kind, '红鸟'), font=body_f,
+    draw.text((width * 0.38, height * 0.48), f'小猪  {pigs}', font=body_f, fill=(168, 230, 164, 255))
+    draw.text((width * 0.52, height * 0.48), f'小鸟  {birds}', font=body_f, fill=(255, 190, 180, 255))
+    # Two-digit bird counts reach the label column on 800 px wide cards.
+    draw.text((width * 0.73, height * 0.48), BIRD_LABELS.get(bird_kind, '红鸟'), font=body_f,
               fill=(180, 228, 255, 255))
     # stars
     for index in range(3):
